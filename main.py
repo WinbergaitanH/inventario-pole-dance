@@ -1,5 +1,5 @@
 from fastapi import FastAPI, HTTPException
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, FileResponse
 from pydantic import BaseModel, Field
 import pandas as pd
 import os
@@ -7,7 +7,7 @@ import os
 app = FastAPI(
     title="Pole Dance Rojas Sport - Inventario & Activos",
     description="Sistema de control de inventario y disponibilidad para Pole Dance Rojas Sport",
-    version="5.0.0"
+    version="6.0.0"
 )
 
 EXCEL_PATH = "Control_Inventario_Pole_Dance.xlsx"
@@ -90,7 +90,7 @@ class Movimiento(BaseModel):
 
 @app.get("/", response_class=HTMLResponse, tags=["Interfaz"])
 def interfaz_usuario():
-    return """<!DOCTYPE html>
+    return '''<!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
@@ -133,16 +133,16 @@ def interfaz_usuario():
 
         .container { max-width: 1000px; margin: 0 auto; }
 
-        /* HEADER BRANDING */
         header {
             text-align: center;
-            padding: 25px 20px 30px;
+            padding: 25px 20px 20px;
             background: rgba(255, 255, 255, 0.05);
             backdrop-filter: blur(12px);
             border-radius: var(--radius-xl);
             border: 1px solid rgba(255, 255, 255, 0.12);
             margin-bottom: 25px;
             box-shadow: var(--shadow);
+            position: relative;
         }
 
         .brand-logo {
@@ -161,9 +161,29 @@ def interfaz_usuario():
             font-size: 0.95rem;
             font-weight: 500;
             letter-spacing: 1px;
+            margin-bottom: 15px;
         }
 
-        /* CARD CONTAINERS */
+        .btn-download-top {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(255, 255, 255, 0.15);
+            color: #fff;
+            padding: 8px 16px;
+            border-radius: 30px;
+            text-decoration: none;
+            font-size: 0.85rem;
+            font-weight: 600;
+            border: 1px solid rgba(255, 255, 255, 0.25);
+            transition: all 0.2s ease;
+        }
+
+        .btn-download-top:hover {
+            background: rgba(255, 255, 255, 0.25);
+            transform: translateY(-2px);
+        }
+
         .glass-card {
             background: var(--card-bg);
             border-radius: var(--radius-xl);
@@ -183,8 +203,8 @@ def interfaz_usuario():
             gap: 10px;
         }
 
-        /* BUSCADOR DE DISPONIBILIDAD */
-        .lookup-box select {
+        .search-box-wrapper { position: relative; }
+        .search-box-wrapper input {
             width: 100%;
             padding: 14px 16px;
             border: 2px solid #e2e8f0;
@@ -193,14 +213,42 @@ def interfaz_usuario():
             font-weight: 500;
             color: var(--text-main);
             background-color: #f8fafc;
-            transition: all 0.25s ease;
             outline: none;
         }
 
-        .lookup-box select:focus {
+        .search-box-wrapper input:focus {
             border-color: var(--primary);
             background-color: #fff;
             box-shadow: 0 0 0 4px var(--accent-glow);
+        }
+
+        .autocomplete-results {
+            position: absolute;
+            top: 105%;
+            left: 0; right: 0;
+            background: white;
+            border-radius: var(--radius-lg);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+            border: 1px solid #cbd5e1;
+            max-height: 220px;
+            overflow-y: auto;
+            z-index: 100;
+            display: none;
+        }
+
+        .autocomplete-item {
+            padding: 12px 16px;
+            cursor: pointer;
+            border-bottom: 1px solid #f1f5f9;
+            font-size: 0.95rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .autocomplete-item:hover {
+            background-color: #f0fdf4;
+            color: var(--primary-dark);
         }
 
         .status-card {
@@ -209,12 +257,6 @@ def interfaz_usuario():
             border-radius: var(--radius-lg);
             display: none;
             text-align: center;
-            animation: fadeIn 0.3s ease-in-out;
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(-5px); }
-            to { opacity: 1; transform: translateY(0); }
         }
 
         .status-card h3 { font-size: 1.3rem; font-weight: 800; margin-bottom: 4px; }
@@ -224,7 +266,6 @@ def interfaz_usuario():
         .status-low { background: var(--warning-bg); color: #b45309; border: 1.5px solid #fde68a; }
         .status-empty { background: var(--danger-bg); color: #b91c1c; border: 1.5px solid #fca5a5; }
 
-        /* TABS */
         .tab-group {
             display: flex;
             gap: 10px;
@@ -245,7 +286,6 @@ def interfaz_usuario():
             font-size: 0.92rem;
             border-radius: 40px;
             cursor: pointer;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
         .tab-btn.active {
@@ -254,7 +294,6 @@ def interfaz_usuario():
             box-shadow: 0 4px 15px var(--accent-glow);
         }
 
-        /* KPIS GRID */
         .kpi-grid {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
@@ -262,9 +301,7 @@ def interfaz_usuario():
             margin-bottom: 25px;
         }
 
-        @media (max-width: 640px) {
-            .kpi-grid { grid-template-columns: 1fr; }
-        }
+        @media (max-width: 640px) { .kpi-grid { grid-template-columns: 1fr; } }
 
         .kpi-card {
             background: var(--card-bg);
@@ -284,15 +321,9 @@ def interfaz_usuario():
             font-weight: 700;
         }
 
-        .kpi-card .number {
-            font-size: 1.8rem;
-            font-weight: 800;
-            color: var(--text-main);
-        }
-
+        .kpi-card .number { font-size: 1.8rem; font-weight: 800; color: var(--text-main); }
         .kpi-card.alert .number { color: var(--danger); }
 
-        /* FORM GRID */
         .form-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -300,9 +331,7 @@ def interfaz_usuario():
             margin-bottom: 25px;
         }
 
-        @media (max-width: 768px) {
-            .form-grid { grid-template-columns: 1fr; }
-        }
+        @media (max-width: 768px) { .form-grid { grid-template-columns: 1fr; } }
 
         .form-group { margin-bottom: 14px; }
         .form-group label {
@@ -321,13 +350,7 @@ def interfaz_usuario():
             border-radius: var(--radius-md);
             font-size: 0.95rem;
             outline: none;
-            transition: border 0.2s;
             background: #f8fafc;
-        }
-
-        .form-group input:focus, .form-group select:focus {
-            border-color: var(--primary);
-            background: #fff;
         }
 
         .btn-action {
@@ -338,19 +361,13 @@ def interfaz_usuario():
             font-weight: 700;
             font-size: 0.95rem;
             cursor: pointer;
-            transition: all 0.25s ease;
             color: white;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
             margin-top: 6px;
         }
 
         .btn-salida { background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); }
-        .btn-salida:hover { box-shadow: 0 6px 18px rgba(239, 68, 68, 0.4); transform: translateY(-1px); }
-
         .btn-entrada { background: linear-gradient(135deg, #10b981 0%, #059669 100%); }
-        .btn-entrada:hover { box-shadow: 0 6px 18px rgba(16, 185, 129, 0.4); transform: translateY(-1px); }
 
-        /* TABLA DE PRODUCTOS */
         .table-header {
             display: flex;
             justify-content: space-between;
@@ -370,48 +387,32 @@ def interfaz_usuario():
             background: #f8fafc;
         }
 
-        .search-input:focus { border-color: var(--primary); background: white; }
-
-        .table-wrapper {
-            overflow-x: auto;
-            border-radius: var(--radius-lg);
-            border: 1px solid #e2e8f0;
-        }
-
+        .table-wrapper { overflow-x: auto; border-radius: var(--radius-lg); border: 1px solid #e2e8f0; }
         table { width: 100%; border-collapse: collapse; background: white; text-align: left; }
         th { background: #f8fafc; color: #475569; font-size: 0.8rem; text-transform: uppercase; font-weight: 700; padding: 14px 16px; border-bottom: 1px solid #e2e8f0; }
         td { padding: 14px 16px; border-bottom: 1px solid #f1f5f9; font-size: 0.92rem; color: #334155; }
-        tr:last-child td { border-bottom: none; }
-
-        .badge {
+        
+        .row-action-btn {
+            background: rgba(217, 70, 239, 0.1);
+            color: var(--primary-dark);
+            border: 1px solid var(--primary);
             padding: 4px 10px;
-            border-radius: 20px;
+            border-radius: 12px;
             font-size: 0.78rem;
             font-weight: 700;
-            display: inline-block;
+            cursor: pointer;
         }
+
+        .badge { padding: 4px 10px; border-radius: 20px; font-size: 0.78rem; font-weight: 700; display: inline-block; }
         .badge-success { background: var(--success-bg); color: #047857; }
         .badge-warning { background: var(--warning-bg); color: #b45309; }
         .badge-danger { background: var(--danger-bg); color: #b91c1c; }
 
-        /* TOAST NOTIFICATION */
         #toast {
-            position: fixed;
-            bottom: 25px;
-            right: 25px;
-            padding: 14px 22px;
-            border-radius: var(--radius-lg);
-            color: white;
-            font-weight: 600;
-            font-size: 0.95rem;
-            display: none;
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.25);
-            z-index: 1000;
-            animation: slideUp 0.3s ease-out;
-        }
-        @keyframes slideUp {
-            from { transform: translateY(20px); opacity: 0; }
-            to { transform: translateY(0); opacity: 1; }
+            position: fixed; bottom: 25px; right: 25px;
+            padding: 14px 22px; border-radius: var(--radius-lg);
+            color: white; font-weight: 600; font-size: 0.95rem; display: none;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.25); z-index: 1000;
         }
         .toast-success { background: #10b981; }
         .toast-error { background: #ef4444; }
@@ -419,31 +420,30 @@ def interfaz_usuario():
 </head>
 <body>
     <div class="container">
-        <!-- MARCA & TITULO -->
         <header>
             <div class="brand-logo">✨ Pole Dance Rojas Sport</div>
             <div class="brand-subtitle">SISTEMA INTEGRAL DE INVENTARIO Y DISPONIBILIDAD</div>
+            <a href="/descargar-excel" class="btn-download-top">📥 Descargar Base de Datos (Excel)</a>
         </header>
 
-        <!-- BUSCADOR DE DISPONIBILIDAD ("¿SE TIENE?") -->
         <div class="glass-card lookup-box">
-            <div class="card-title">🔍 Consultar Disponibilidad ("¿Se tiene?")</div>
-            <select id="lookup-sku" onchange="ejecutarConsulta()">
-                <option value="">-- Selecciona una prenda o equipo para consultar --</option>
-            </select>
+            <div class="card-title">🔍 Consulta Rápida ("Escribe una palabra...")</div>
+            <div class="search-box-wrapper">
+                <input type="text" id="lookup-input" placeholder="Escribe 'Short', 'Top', 'Negro', 'Talla M' o un SKU..." oninput="buscarAutocomplete(this.value)" autocomplete="off">
+                <div id="autocomplete-list" class="autocomplete-results"></div>
+            </div>
+
             <div id="status-display" class="status-card">
                 <h3 id="status-title">---</h3>
                 <p id="status-desc">---</p>
             </div>
         </div>
 
-        <!-- PESTAÑAS (ROPA / EQUIPOS) -->
         <div class="tab-group">
             <button class="tab-btn active" id="btn-tab-productos" onclick="cambiarPestana('productos')">👗 Ropa & Productos</button>
             <button class="tab-btn" id="btn-tab-equipamiento" onclick="cambiarPestana('equipamiento')">🪑 Equipamiento & Activos</button>
         </div>
 
-        <!-- KPIS DETALLADOS -->
         <div class="kpi-grid">
             <div class="kpi-card">
                 <h4>Catálogo Activo</h4>
@@ -459,13 +459,13 @@ def interfaz_usuario():
             </div>
         </div>
 
-        <!-- FORMULARIOS DE REGISTRO DE ENTRADAS Y SALIDAS -->
         <div class="form-grid">
             <div class="glass-card">
                 <div class="card-title" id="form-salida-title">🛍️ Registrar Venta / Salida</div>
                 <div class="form-group">
-                    <label>Seleccionar Ítem</label>
-                    <select id="v_sku"></select>
+                    <label>Buscar o Seleccionar Ítem</label>
+                    <input type="text" id="v_search" placeholder="Escribe para filtrar lista..." oninput="filtrarSelect('v_sku', this.value)" style="margin-bottom: 6px;">
+                    <select id="v_sku" size="4" style="height: 110px;"></select>
                 </div>
                 <div class="form-group">
                     <label>Cantidad a Descontar</label>
@@ -481,8 +481,9 @@ def interfaz_usuario():
             <div class="glass-card">
                 <div class="card-title" id="form-entrada-title">📦 Registrar Entrada / Compra</div>
                 <div class="form-group">
-                    <label>Seleccionar Ítem</label>
-                    <select id="e_sku"></select>
+                    <label>Buscar o Seleccionar Ítem</label>
+                    <input type="text" id="e_search" placeholder="Escribe para filtrar lista..." oninput="filtrarSelect('e_sku', this.value)" style="margin-bottom: 6px;">
+                    <select id="e_sku" size="4" style="height: 110px;"></select>
                 </div>
                 <div class="form-group">
                     <label>Cantidad Ingresada</label>
@@ -496,11 +497,10 @@ def interfaz_usuario():
             </div>
         </div>
 
-        <!-- TABLA PRINCIPAL DE INVENTARIO -->
         <div class="glass-card">
             <div class="table-header">
                 <div class="card-title" id="tabla-titulo" style="margin-bottom:0;">📋 Listado de Productos</div>
-                <input type="text" id="search" class="search-input" placeholder="🔍 Buscar por nombre o SKU..." onkeyup="filtrarTabla()">
+                <input type="text" id="search" class="search-input" placeholder="🔍 Escribe una palabra..." onkeyup="filtrarTabla()">
             </div>
             <div class="table-wrapper">
                 <table>
@@ -509,11 +509,12 @@ def interfaz_usuario():
                             <th>SKU</th>
                             <th>Descripción / Producto</th>
                             <th>Estado</th>
-                            <th>Disponibles</th>
+                            <th>Stock</th>
+                            <th>Acción Rápida</th>
                         </tr>
                     </thead>
                     <tbody id="tabla-body">
-                        <tr><td colspan="4" style="text-align:center;">Cargando inventario...</td></tr>
+                        <tr><td colspan="5" style="text-align:center;">Cargando inventario...</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -530,30 +531,65 @@ def interfaz_usuario():
             try {
                 const res = await fetch('/stock');
                 inventarioGlobal = await res.json();
-                actualizarListaConsulta();
                 renderizarInterface();
             } catch(e) {
                 mostrarToast("Error de conexión con el servidor", false);
             }
         }
 
-        function actualizarListaConsulta() {
-            const lookupSelect = document.getElementById('lookup-sku');
-            const valorPrevio = lookupSelect.value;
-            lookupSelect.innerHTML = '<option value="">-- Selecciona una prenda o equipo para consultar --</option>';
+        function buscarAutocomplete(query) {
+            const listDiv = document.getElementById('autocomplete-list');
+            const term = query.trim().toLowerCase();
+            
+            if (term.length === 0) {
+                listDiv.style.display = 'none';
+                return;
+            }
+
+            let html = '';
+            let coincidencias = 0;
 
             for (const [sku, item] of Object.entries(inventarioGlobal)) {
-                const catTag = item.categoria === 'productos' ? '👗' : '🪑';
-                lookupSelect.innerHTML += `<option value="${sku}">${catTag} [${sku}] ${item.nombre}</option>`;
+                const textoCompleto = `${sku} ${item.nombre}`.toLowerCase();
+                if (textoCompleto.includes(term)) {
+                    coincidencias++;
+                    const catTag = item.categoria === 'productos' ? '👗' : '🪑';
+                    const stockTag = item.stock_actual > 0 ? `<b>${item.stock_actual} ud.</b>` : '<span style="color:#ef4444;font-weight:bold;">Agotado</span>';
+                    
+                    html += `
+                        <div class="autocomplete-item" onclick="seleccionarDatoConsulta('${sku}')">
+                            <span>${catTag} <b>[${sku}]</b> ${item.nombre}</span>
+                            <span>${stockTag}</span>
+                        </div>
+                    `;
+                }
             }
-            if (valorPrevio) {
-                lookupSelect.value = valorPrevio;
-                ejecutarConsulta();
+
+            if (coincidencias > 0) {
+                listDiv.innerHTML = html;
+                listDiv.style.display = 'block';
+            } else {
+                listDiv.innerHTML = '<div class="autocomplete-item" style="color:#94a3b8;">Sin resultados</div>';
+                listDiv.style.display = 'block';
             }
         }
 
-        function ejecutarConsulta() {
-            const sku = document.getElementById('lookup-sku').value;
+        function seleccionarDatoConsulta(sku) {
+            const item = inventarioGlobal[sku];
+            document.getElementById('lookup-input').value = item.nombre;
+            document.getElementById('autocomplete-list').style.display = 'none';
+            
+            if (item.categoria !== categoriaActual) {
+                cambiarPestana(item.categoria);
+            }
+
+            ejecutarConsulta(sku);
+
+            document.getElementById('v_sku').value = sku;
+            document.getElementById('e_sku').value = sku;
+        }
+
+        function ejecutarConsulta(sku) {
             const display = document.getElementById('status-display');
             const title = document.getElementById('status-title');
             const desc = document.getElementById('status-desc');
@@ -584,6 +620,27 @@ def interfaz_usuario():
             }
         }
 
+        function filtrarSelect(selectId, query) {
+            const select = document.getElementById(selectId);
+            const term = query.toLowerCase();
+            select.innerHTML = '';
+
+            for (const [sku, item] of Object.entries(inventarioGlobal)) {
+                if (item.categoria !== categoriaActual) continue;
+                
+                const optionText = `${sku} - ${item.nombre}`;
+                if (optionText.toLowerCase().includes(term)) {
+                    const opt = document.createElement('option');
+                    opt.value = sku;
+                    opt.innerText = optionText;
+                    select.appendChild(opt);
+                }
+            }
+            if (select.options.length > 0) {
+                select.selectedIndex = 0;
+            }
+        }
+
         function cambiarPestana(cat) {
             categoriaActual = cat;
             document.getElementById('btn-tab-productos').classList.toggle('active', cat === 'productos');
@@ -598,6 +655,9 @@ def interfaz_usuario():
                 document.getElementById('form-salida-title').innerText = '⚠️ Registrar Salida / Baja';
                 document.getElementById('btn-salida-action').innerText = 'Descontar Equipamiento';
             }
+            
+            document.getElementById('v_search').value = '';
+            document.getElementById('e_search').value = '';
             
             renderizarInterface();
         }
@@ -623,8 +683,16 @@ def interfaz_usuario():
                 if (item.stock_actual <= 0) sinStock++;
 
                 const optionText = `${sku} - ${item.nombre}`;
-                vSelect.innerHTML += `<option value="${sku}">${optionText}</option>`;
-                eSelect.innerHTML += `<option value="${sku}">${optionText}</option>`;
+                
+                const optV = document.createElement('option');
+                optV.value = sku;
+                optV.innerText = optionText;
+                vSelect.appendChild(optV);
+
+                const optE = document.createElement('option');
+                optE.value = sku;
+                optE.innerText = optionText;
+                eSelect.appendChild(optE);
 
                 let badgeClass = 'badge-success';
                 let estadoTexto = 'Disponible';
@@ -643,6 +711,7 @@ def interfaz_usuario():
                         <td>${item.nombre}</td>
                         <td><span class="badge ${badgeClass}">${estadoTexto}</span></td>
                         <td><b>${item.stock_actual} ud.</b></td>
+                        <td><button class="row-action-btn" onclick="seleccionarDatoConsulta('${sku}')">⚡ Seleccionar</button></td>
                     </tr>
                 `;
             }
@@ -670,6 +739,7 @@ def interfaz_usuario():
                             <td>${item.nombre}</td>
                             <td><span class="badge ${badgeClass}">${estadoTexto}</span></td>
                             <td><b>${item.stock_actual} ud.</b></td>
+                            <td><button class="row-action-btn" onclick="seleccionarDatoConsulta('${sku}')">⚡ Seleccionar</button></td>
                         </tr>
                     `;
                 }
@@ -681,6 +751,11 @@ def interfaz_usuario():
             const sku = document.getElementById(prefix + 'sku').value;
             const cantidad = parseInt(document.getElementById(prefix + 'cant').value);
             const registrado_por = document.getElementById(prefix + 'usuario').value;
+
+            if (!sku) {
+                mostrarToast("Por favor selecciona un producto de la lista", false);
+                return;
+            }
 
             if (!registrado_por.trim()) {
                 mostrarToast("Por favor ingresa tu nombre", false);
@@ -715,10 +790,16 @@ def interfaz_usuario():
             setTimeout(() => { toast.style.display = 'none'; }, 3500);
         }
 
+        document.addEventListener('click', function(e) {
+            if (!e.target.closest('.search-box-wrapper')) {
+                document.getElementById('autocomplete-list').style.display = 'none';
+            }
+        });
+
         cargarInventario();
     </script>
 </body>
-</html>"""
+</html>'''
 
 @app.get("/stock", tags=["API"])
 def ver_stock():
@@ -731,6 +812,17 @@ def ver_stock():
             "stock_actual": stock_actual
         }
     return resultado
+
+@app.get("/descargar-excel", tags=["API"])
+def descargar_excel():
+    if os.path.exists(EXCEL_PATH):
+        return FileResponse(
+            path=EXCEL_PATH, 
+            filename="Control_Inventario_Pole_Dance.xlsx",
+            media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        )
+    else:
+        raise HTTPException(status_code=404, detail="El archivo Excel no se encuentra en el servidor.")
 
 @app.post("/entradas", tags=["API"])
 def registrar_entrada(mov: Movimiento):
