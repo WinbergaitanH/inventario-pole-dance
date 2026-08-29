@@ -8,76 +8,114 @@ import uvicorn
 app = FastAPI(
     title="Pole Dance Rojas Sport - Inventario & Activos",
     description="Sistema de control de inventario y disponibilidad para Pole Dance Rojas Sport",
-    version="6.5.0"
+    version="8.0.0"
 )
 
 EXCEL_PATH = "Control_Inventario_Pole_Dance.xlsx"
+
+# Diccionarios globales para mantener el registro de movimientos en memoria
+historial_entradas = {}  # {sku: cantidad}
+historial_ventas = {}    # {sku: cantidad}
 
 def cargar_inventario_desde_excel():
     inventario = {}
     
     if os.path.exists(EXCEL_PATH):
-        # 1. Cargar Productos (Ropa / Accesorios)
         try:
-            df_catalogo = pd.read_excel(EXCEL_PATH, sheet_name='🏷️ Catálogo Productos', header=1)
-            for index, row in df_catalogo.iterrows():
-                sku = str(row.iloc[0]).strip()
-                if pd.notna(sku) and sku.lower() not in ["nan", "sku", "código", "codigo"]:
-                    nombre = f"{row.iloc[2]} ({row.iloc[1]}) - Talla {row.iloc[3]}"
-                    try:
-                        stock_ini = int(row.iloc[6])
-                    except (ValueError, TypeError):
-                        stock_ini = 0
+            excel_file = pd.ExcelFile(EXCEL_PATH)
+            
+            # 1. Leer Catálogo de Productos (Encabezados en la Fila 1)
+            for sheet in excel_file.sheet_names:
+                if any(kw in sheet.lower() for kw in ["catálogo", "catalogo", "productos"]):
+                    df_cat = pd.read_excel(EXCEL_PATH, sheet_name=sheet, header=0)
+                    
+                    # Normalizar nombres de columnas a minúsculas y sin espacios
+                    col_map = {str(c).strip().lower(): c for c in df_cat.columns}
+                    
+                    # Buscar columnas relevantes
+                    col_sku = next((col_map[k] for k in col_map if 'sku' in k or 'código' in k or 'codigo' in k), df_cat.columns[0])
+                    col_desc = next((col_map[k] for k in col_map if 'descrip' in k or 'estilo' in k or 'nombre' in k), None)
+                    col_tipo = next((col_map[k] for k in col_map if 'tipo' in k or 'prenda' in k), None)
+                    col_talla = next((col_map[k] for k in col_map if 'talla' in k), None)
+                    col_stock = next((col_map[k] for k in col_map if 'stock inicial' in k or 'inicial' in k or 'stock' in k), None)
 
-                    inventario[sku] = {
-                        "nombre": nombre,
-                        "categoria": "productos",
-                        "stock_inicial": stock_ini,
-                        "entradas": 0,
-                        "ventas": 0
-                    }
-        except Exception:
-            pass
+                    for _, row in df_cat.iterrows():
+                        sku = str(row[col_sku]).strip() if pd.notna(row[col_sku]) else ""
+                        if sku and sku.lower() not in ['nan', 'none', 'sku', 'sku / código', 'código', 'codigo', '']:
+                            desc = str(row[col_desc]).strip() if col_desc and pd.notna(row[col_desc]) else ""
+                            tipo = str(row[col_tipo]).strip() if col_tipo and pd.notna(row[col_tipo]) else ""
+                            talla = str(row[col_talla]).strip() if col_talla and pd.notna(row[col_talla]) else ""
 
-        # 2. Cargar Equipamiento / Activos
-        try:
-            df_equip = pd.read_excel(EXCEL_PATH, sheet_name='🪑 Equipamiento', header=0)
-            for index, row in df_equip.iterrows():
-                sku = str(row.iloc[0]).strip()
-                if pd.notna(sku) and sku.lower() not in ["nan", "sku", "código", "codigo"]:
-                    nombre = str(row.iloc[1]).strip()
-                    try:
-                        stock_ini = int(row.iloc[2])
-                    except (ValueError, TypeError):
-                        stock_ini = 0
+                            # Construir el nombre dinámico del producto
+                            partes = []
+                            if desc and desc.lower() != 'nan':
+                                partes.append(desc)
+                            if tipo and tipo.lower() != 'nan':
+                                partes.append(f"({tipo})")
+                            if talla and talla.lower() != 'nan':
+                                partes.append(f"- Talla {talla}")
+                            
+                            nombre_completo = " ".join(partes) if partes else sku
 
-                    inventario[sku] = {
-                        "nombre": nombre,
-                        "categoria": "equipamiento",
-                        "stock_inicial": stock_ini,
-                        "entradas": 0,
-                        "ventas": 0
-                    }
-        except Exception:
-            pass
+                            try:
+                                val_stock = row[col_stock] if col_stock and pd.notna(row[col_stock]) else 0
+                                stock_ini = int(float(val_stock))
+                            except (ValueError, TypeError):
+                                stock_ini = 0
 
-    # Equipamiento base por defecto si no existen en Excel
-    items_base_equipamiento = {
-        "EQ-TUBO": "Tubo Pole Dance Profesional",
-        "EQ-MAT": "Mat / Colchoneta de Caída",
-        "EQ-SILLA": "Silla de Entrenamiento",
-        "EQ-MESA": "Mesa Auxiliar",
-        "EQ-ESPEJO": "Espejo de Sala"
-    }
+                            inventario[sku] = {
+                                "nombre": nombre_completo,
+                                "categoria": "productos",
+                                "stock_inicial": stock_ini,
+                                "entradas": historial_entradas.get(sku, 0),
+                                "ventas": historial_ventas.get(sku, 0)
+                            }
 
-    for sku, nombre in items_base_equipamiento.items():
-        if sku not in inventario:
+            # 2. Leer Activos Fijos / Equipamiento (Encabezados en la Fila 1)
+            for sheet in excel_file.sheet_names:
+                if any(kw in sheet.lower() for kw in ["activos", "equipamiento", "activos fijos"]):
+                    df_act = pd.read_excel(EXCEL_PATH, sheet_name=sheet, header=0)
+                    col_map = {str(c).strip().lower(): c for c in df_act.columns}
+                    
+                    col_sku = next((col_map[k] for k in col_map if 'código' in k or 'codigo' in k or 'sku' in k or 'activo' in k), df_act.columns[0])
+                    col_nombre = next((col_map[k] for k in col_map if 'nombre' in k or 'activo' in k or 'descrip' in k), None)
+                    col_cant = next((col_map[k] for k in col_map if 'cantidad' in k or 'stock' in k or 'inicial' in k), None)
+
+                    for _, row in df_act.iterrows():
+                        sku = str(row[col_sku]).strip() if pd.notna(row[col_sku]) else ""
+                        if sku and sku.lower() not in ['nan', 'none', 'código activo', 'codigo activo', 'sku', '']:
+                            nombre_activo = str(row[col_nombre]).strip() if col_nombre and pd.notna(row[col_nombre]) else sku
+
+                            try:
+                                val_cant = row[col_cant] if col_cant and pd.notna(row[col_cant]) else 0
+                                stock_ini = int(float(val_cant))
+                            except (ValueError, TypeError):
+                                stock_ini = 0
+
+                            inventario[sku] = {
+                                "nombre": nombre_activo if nombre_activo.lower() != 'nan' else sku,
+                                "categoria": "equipamiento",
+                                "stock_inicial": stock_ini,
+                                "entradas": historial_entradas.get(sku, 0),
+                                "ventas": historial_ventas.get(sku, 0)
+                            }
+
+        except Exception as e:
+            print(f"⚠️ Error leyendo Excel: {e}")
+
+    # Datos por defecto si el Excel no está presente o falla la lectura
+    if not inventario:
+        items_base = {
+            "EQ-TUBO": ("Tubo Pole Dance Profesional", "equipamiento"),
+            "EQ-MAT": ("Mat / Colchoneta de Caída", "equipamiento")
+        }
+        for sku, (nombre, cat) in items_base.items():
             inventario[sku] = {
                 "nombre": nombre,
-                "categoria": "equipamiento",
+                "categoria": cat,
                 "stock_inicial": 5,
-                "entradas": 0,
-                "ventas": 0
+                "entradas": historial_entradas.get(sku, 0),
+                "ventas": historial_ventas.get(sku, 0)
             }
 
     return inventario
@@ -446,7 +484,7 @@ def interfaz_usuario():
         <div class="glass-card lookup-box">
             <div class="card-title">🔍 Consulta Rápida ("Escribe una palabra...")</div>
             <div class="search-box-wrapper">
-                <input type="text" id="lookup-input" placeholder="Escribe 'Short', 'Top', 'Negro', 'Talla M' o un SKU..." oninput="buscarAutocomplete(this.value)" autocomplete="off">
+                <input type="text" id="lookup-input" placeholder="Escribe 'Short', 'Top', 'Velvet', 'Barra' o un SKU..." oninput="buscarAutocomplete(this.value)" autocomplete="off">
                 <div id="autocomplete-list" class="autocomplete-results"></div>
             </div>
 
@@ -868,6 +906,8 @@ def registrar_entrada(mov: Movimiento):
         raise HTTPException(status_code=404, detail="El SKU no existe.")
     
     inventario_db[mov.sku]["entradas"] += mov.cantidad
+    historial_entradas[mov.sku] = inventario_db[mov.sku]["entradas"]
+    
     stock = inventario_db[mov.sku]["stock_inicial"] + inventario_db[mov.sku]["entradas"] - inventario_db[mov.sku]["ventas"]
     return {
         "mensaje": f"✅ Ingresadas {mov.cantidad} ud. a {inventario_db[mov.sku]['nombre']}",
@@ -888,6 +928,8 @@ def registrar_venta(mov: Movimiento):
         )
         
     inventario_db[mov.sku]["ventas"] += mov.cantidad
+    historial_ventas[mov.sku] = inventario_db[mov.sku]["ventas"]
+    
     nuevo_stock = stock_actual - mov.cantidad
     return {
         "mensaje": f"🛒 Registrada salida de {mov.cantidad} ud. de {inventario_db[mov.sku]['nombre']}",
