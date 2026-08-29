@@ -8,7 +8,7 @@ import uvicorn
 app = FastAPI(
     title="Pole Dance Rojas Sport - Inventario & Activos",
     description="Sistema de control de inventario y disponibilidad para Pole Dance Rojas Sport",
-    version="8.0.0"
+    version="8.1.0"
 )
 
 EXCEL_PATH = "Control_Inventario_Pole_Dance.xlsx"
@@ -37,7 +37,7 @@ def cargar_inventario_desde_excel():
                     col_desc = next((col_map[k] for k in col_map if 'descrip' in k or 'estilo' in k or 'nombre' in k), None)
                     col_tipo = next((col_map[k] for k in col_map if 'tipo' in k or 'prenda' in k), None)
                     col_talla = next((col_map[k] for k in col_map if 'talla' in k), None)
-                    col_stock = next((col_map[k] for k in col_map if 'stock inicial' in k or 'inicial' in k or 'stock' in k), None)
+                    col_stock = next((col_map[k] for k in col_map if 'stock inicial' in k or 'inicial' in k or 'stock' in k or 'cantidad' in k), None)
 
                     for _, row in df_cat.iterrows():
                         sku = str(row[col_sku]).strip() if pd.notna(row[col_sku]) else ""
@@ -77,20 +77,24 @@ def cargar_inventario_desde_excel():
                     df_act = pd.read_excel(EXCEL_PATH, sheet_name=sheet, header=0)
                     col_map = {str(c).strip().lower(): c for c in df_act.columns}
                     
-                    col_sku = next((col_map[k] for k in col_map if 'código' in k or 'codigo' in k or 'sku' in k or 'activo' in k), df_act.columns[0])
-                    col_nombre = next((col_map[k] for k in col_map if 'nombre' in k or 'activo' in k or 'descrip' in k), None)
-                    col_cant = next((col_map[k] for k in col_map if 'cantidad' in k or 'stock' in k or 'inicial' in k), None)
+                    # Identificar explícitamente las columnas según tu Excel
+                    col_sku = next((col_map[k] for k in col_map if 'código' in k or 'codigo' in k or 'sku' in k), df_act.columns[0])
+                    col_nombre = next((col_map[k] for k in col_map if 'nombre del activo' in k or 'nombre' in k or 'descrip' in k), None)
+                    col_cant = next((col_map[k] for k in col_map if 'cantidad' in k or 'stock' in k), None)
 
                     for _, row in df_act.iterrows():
                         sku = str(row[col_sku]).strip() if pd.notna(row[col_sku]) else ""
                         if sku and sku.lower() not in ['nan', 'none', 'código activo', 'codigo activo', 'sku', '']:
                             nombre_activo = str(row[col_nombre]).strip() if col_nombre and pd.notna(row[col_nombre]) else sku
 
+                            # Si la cantidad en el Excel está vacía, le asigna 1 por defecto
                             try:
-                                val_cant = row[col_cant] if col_cant and pd.notna(row[col_cant]) else 0
-                                stock_ini = int(float(val_cant))
+                                if col_cant and pd.notna(row[col_cant]):
+                                    stock_ini = int(float(row[col_cant]))
+                                else:
+                                    stock_ini = 1
                             except (ValueError, TypeError):
-                                stock_ini = 0
+                                stock_ini = 1
 
                             inventario[sku] = {
                                 "nombre": nombre_activo if nombre_activo.lower() != 'nan' else sku,
