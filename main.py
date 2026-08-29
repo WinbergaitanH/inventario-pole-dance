@@ -841,15 +841,17 @@ def registrar_venta(mov: Movimiento):
     if mov.sku not in inventario_db:
         raise HTTPException(status_code=404, detail="El SKU no existe.")
     
-    item = inventario_db[mov.sku]
-    stock_disponible = item["stock_inicial"] + item["entradas"] - item["ventas"]
+    stock_actual = inventario_db[mov.sku]["stock_inicial"] + inventario_db[mov.sku]["entradas"] - inventario_db[mov.sku]["ventas"]
     
-    if mov.cantidad > stock_disponible:
-        raise HTTPException(status_code=400, detail=f"⚠️ Stock insuficiente. Solo quedan {stock_disponible} unidades.")
-    
-    item["ventas"] += mov.cantidad
-    nuevo_stock = stock_disponible - mov.cantidad
+    if mov.cantidad > stock_actual:
+        raise HTTPException(
+            status_code=400, 
+            detail=f"Stock insuficiente. Disponible: {stock_actual} ud."
+        )
+        
+    inventario_db[mov.sku]["ventas"] += mov.cantidad
+    nuevo_stock = stock_actual - mov.cantidad
     return {
-        "mensaje": f"Descuento registrado por {mov.registrado_por}",
-        "stock_restante": nuevo_stock
+        "mensaje": f"🛒 Registrada salida de {mov.cantidad} ud. de {inventario_db[mov.sku]['nombre']}",
+        "stock_actual": nuevo_stock
     }
