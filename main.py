@@ -5,9 +5,9 @@ import pandas as pd
 import os
 
 app = FastAPI(
-    title="Control de Inventario y Consultas Pole Dance",
-    description="Sistema interactivo con registro de movimientos y consulta rápida de disponibilidad",
-    version="4.0.0"
+    title="Pole Dance Rojas Sport - Inventario & Activos",
+    description="Sistema de control de inventario y disponibilidad para Pole Dance Rojas Sport",
+    version="5.0.0"
 )
 
 EXCEL_PATH = "Control_Inventario_Pole_Dance.xlsx"
@@ -16,7 +16,7 @@ def cargar_inventario_desde_excel():
     inventario = {}
     
     if os.path.exists(EXCEL_PATH):
-        # 1. Cargar Productos (Ropa)
+        # 1. Cargar Productos (Ropa / Accesorios)
         try:
             df_catalogo = pd.read_excel(EXCEL_PATH, sheet_name='🏷️ Catálogo Productos', header=1)
             for index, row in df_catalogo.iterrows():
@@ -38,7 +38,7 @@ def cargar_inventario_desde_excel():
         except Exception:
             pass
 
-        # 2. Cargar Equipamiento
+        # 2. Cargar Equipamiento / Activos
         try:
             df_equip = pd.read_excel(EXCEL_PATH, sheet_name='🪑 Equipamiento', header=0)
             for index, row in df_equip.iterrows():
@@ -60,7 +60,7 @@ def cargar_inventario_desde_excel():
         except Exception:
             pass
 
-    # Ítems base de equipamiento por defecto si no existen en el Excel
+    # Equipamiento base por defecto
     items_base_equipamiento = {
         "EQ-TUBO": "Tubo Pole Dance Profesional",
         "EQ-MAT": "Mat / Colchoneta de Caída",
@@ -90,404 +90,635 @@ class Movimiento(BaseModel):
 
 @app.get("/", response_class=HTMLResponse, tags=["Interfaz"])
 def interfaz_usuario():
-    return """
-    <!DOCTYPE html>
-    <html lang="es">
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Control de Inventario & Consultas</title>
-        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-        <style>
-            :root {
-                --primary: #8e44ad;
-                --primary-hover: #732d91;
-                --success: #2ecc71;
-                --danger: #e74c3c;
-                --warning: #f39c12;
-                --info: #3498db;
-                --bg: #f8f9fa;
-                --card-bg: #ffffff;
-                --text: #2c3e50;
-            }
+    return """<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Pole Dance Rojas Sport</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-gradient: linear-gradient(135deg, #0f0c20 0%, #1a102f 50%, #261239 100%);
+            --card-bg: rgba(255, 255, 255, 0.96);
+            --primary: #d946ef;
+            --primary-dark: #c026d3;
+            --accent: #8b5cf6;
+            --accent-glow: rgba(217, 70, 239, 0.35);
+            --text-main: #1e1b4b;
+            --text-muted: #64748b;
+            --success: #10b981;
+            --success-bg: #ecfdf5;
+            --warning: #f59e0b;
+            --warning-bg: #fffbeb;
+            --danger: #ef4444;
+            --danger-bg: #fef2f2;
+            --radius-xl: 20px;
+            --radius-lg: 14px;
+            --radius-md: 10px;
+            --shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.3);
+        }
 
-            * { box-sizing: border-box; font-family: 'Inter', sans-serif; margin: 0; padding: 0; }
-            body { background-color: var(--bg); color: var(--text); padding: 20px; }
-            .container { max-width: 1050px; margin: 0 auto; }
-            
-            header { text-align: center; margin-bottom: 25px; }
-            header h1 { color: var(--primary); font-size: 2.2rem; margin-bottom: 5px; }
-            header p { color: #7f8c8d; font-size: 1rem; }
+        * { box-sizing: border-box; font-family: 'Plus Jakarta Sans', sans-serif; margin: 0; padding: 0; }
+        
+        body {
+            background: var(--bg-gradient);
+            background-attachment: fixed;
+            color: var(--text-main);
+            min-height: 100vh;
+            padding: 20px 15px 40px;
+        }
 
-            /* Tabs navigation */
-            .tab-nav { display: flex; justify-content: center; gap: 10px; margin-bottom: 25px; flex-wrap: wrap; }
-            .tab-btn { padding: 12px 20px; border: none; background: #e0e0e0; border-radius: 30px; font-weight: 600; cursor: pointer; font-size: 0.95rem; transition: all 0.2s; color: #555; }
-            .tab-btn.active { background: var(--primary); color: white; box-shadow: 0 4px 12px rgba(142, 68, 173, 0.3); }
+        .container { max-width: 1000px; margin: 0 auto; }
 
-            /* Consultation Box */
-            .lookup-card { background: var(--card-bg); padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.06); margin-bottom: 30px; border-top: 5px solid var(--info); }
-            .lookup-header { font-size: 1.2rem; font-weight: 700; color: #2c3e50; margin-bottom: 15px; display: flex; align-items: center; gap: 8px; }
-            .lookup-flex { display: flex; gap: 15px; align-items: center; flex-wrap: wrap; }
-            .lookup-flex select { flex: 1; min-width: 250px; padding: 12px; font-size: 1rem; }
-            
-            .status-display { margin-top: 20px; padding: 18px; border-radius: 10px; display: none; text-align: center; }
-            .status-display h3 { font-size: 1.5rem; margin-bottom: 5px; }
-            .status-display p { font-size: 1.1rem; }
-            .status-available { background-color: #e8f8f0; color: #1e8449; border: 1px solid #a3e4d7; }
-            .status-low { background-color: #fef9e7; color: #b7950b; border: 1px solid #f9e79f; }
-            .status-empty { background-color: #fdeaea; color: #922b21; border: 1px solid #f5b7b1; }
+        /* HEADER BRANDING */
+        header {
+            text-align: center;
+            padding: 25px 20px 30px;
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(12px);
+            border-radius: var(--radius-xl);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            margin-bottom: 25px;
+            box-shadow: var(--shadow);
+        }
 
-            /* KPIs Cards */
-            .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 25px; }
-            .kpi-card { background: var(--card-bg); padding: 18px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); text-align: center; border-left: 4px solid var(--primary); }
-            .kpi-card.warning { border-left-color: var(--warning); }
-            .kpi-card h4 { font-size: 0.85rem; color: #7f8c8d; text-transform: uppercase; margin-bottom: 5px; }
-            .kpi-card .number { font-size: 1.6rem; font-weight: 700; color: var(--text); }
+        .brand-logo {
+            font-size: 2.2rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, #ffffff 0%, #f472b6 50%, #d946ef 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: -0.5px;
+            text-transform: uppercase;
+            margin-bottom: 6px;
+        }
 
-            /* Forms Layout */
-            .actions-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 30px; }
-            @media (max-width: 768px) { .actions-grid { grid-template-columns: 1fr; } }
-            
-            .card { background: var(--card-bg); padding: 22px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
-            .card h3 { font-size: 1.1rem; margin-bottom: 15px; display: flex; align-items: center; gap: 8px; }
-            
-            label { display: block; font-size: 0.85rem; font-weight: 600; margin: 10px 0 4px; color: #34495e; }
-            input, select { width: 100%; padding: 10px 12px; border: 1px solid #dcdfe6; border-radius: 8px; font-size: 0.95rem; transition: border 0.2s; }
-            input:focus, select:focus { outline: none; border-color: var(--primary); }
+        .brand-subtitle {
+            color: #cbd5e1;
+            font-size: 0.95rem;
+            font-weight: 500;
+            letter-spacing: 1px;
+        }
 
-            button { width: 100%; padding: 12px; border: none; border-radius: 8px; font-size: 0.95rem; font-weight: 600; cursor: pointer; margin-top: 15px; transition: all 0.2s; }
-            .btn-venta { background: var(--danger); color: white; }
-            .btn-venta:hover { background: #c0392b; }
-            .btn-entrada { background: var(--success); color: white; }
-            .btn-entrada:hover { background: #27ae60; }
-            .btn-consultar { background: var(--info); color: white; width: auto; padding: 12px 25px; margin-top: 0; }
-            .btn-consultar:hover { background: #2980b9; }
+        /* CARD CONTAINERS */
+        .glass-card {
+            background: var(--card-bg);
+            border-radius: var(--radius-xl);
+            padding: 24px;
+            box-shadow: var(--shadow);
+            margin-bottom: 25px;
+            border: 1px solid rgba(255, 255, 255, 0.8);
+        }
 
-            /* Table Section */
-            .table-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; flex-wrap: wrap; gap: 10px; }
-            .search-box { width: 280px; }
-            
-            .table-container { background: var(--card-bg); border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); overflow-x: auto; }
-            table { width: 100%; border-collapse: collapse; text-align: left; }
-            th, td { padding: 14px 18px; border-bottom: 1px solid #f1f2f6; font-size: 0.92rem; }
-            th { background: #fafbfc; color: #57606f; font-weight: 600; }
-            
-            .badge { padding: 5px 10px; border-radius: 20px; font-weight: 600; font-size: 0.8rem; display: inline-block; }
-            .badge-success { background: #e8f8f0; color: #2ecc71; }
-            .badge-warning { background: #fef9e7; color: #f39c12; }
-            .badge-danger { background: #fdeaea; color: #e74c3c; }
+        .card-title {
+            font-size: 1.15rem;
+            font-weight: 700;
+            color: var(--text-main);
+            margin-bottom: 18px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
 
-            /* Toast Notifications */
-            #toast { position: fixed; bottom: 20px; right: 20px; padding: 14px 20px; border-radius: 8px; color: white; font-weight: 500; display: none; box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 1000; }
-            .toast-success { background: var(--success); }
-            .toast-error { background: var(--danger); }
-        </style>
-    </head>
-    <body>
-        <div class="container">
-            <header>
-                <h1>✨ Inventario & Consultas Pole Dance</h1>
-                <p>Gestión de Prendas, Mobiliario y Consultas de Disponibilidad</p>
-            </header>
+        /* BUSCADOR DE DISPONIBILIDAD */
+        .lookup-box select {
+            width: 100%;
+            padding: 14px 16px;
+            border: 2px solid #e2e8f0;
+            border-radius: var(--radius-lg);
+            font-size: 1rem;
+            font-weight: 500;
+            color: var(--text-main);
+            background-color: #f8fafc;
+            transition: all 0.25s ease;
+            outline: none;
+        }
 
-            <!-- 🔍 SECCIÓN DE CONSULTA RÁPIDA -->
-            <div class="lookup-card">
-                <div class="lookup-header">🔍 Consulta Rápida de Disponibilidad ("¿Se tiene?")</div>
-                <div class="lookup-flex">
-                    <select id="lookup-sku" onchange="ejecutarConsulta()">
-                        <option value="">-- Selecciona una prenda o equipo para consultar --</option>
-                    </select>
-                </div>
+        .lookup-box select:focus {
+            border-color: var(--primary);
+            background-color: #fff;
+            box-shadow: 0 0 0 4px var(--accent-glow);
+        }
 
-                <div id="status-display" class="status-display">
-                    <h3 id="status-title">---</h3>
-                    <p id="status-desc">---</p>
-                </div>
+        .status-card {
+            margin-top: 18px;
+            padding: 18px 20px;
+            border-radius: var(--radius-lg);
+            display: none;
+            text-align: center;
+            animation: fadeIn 0.3s ease-in-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .status-card h3 { font-size: 1.3rem; font-weight: 800; margin-bottom: 4px; }
+        .status-card p { font-size: 0.95rem; font-weight: 500; }
+
+        .status-available { background: var(--success-bg); color: #047857; border: 1.5px solid #a7f3d0; }
+        .status-low { background: var(--warning-bg); color: #b45309; border: 1.5px solid #fde68a; }
+        .status-empty { background: var(--danger-bg); color: #b91c1c; border: 1.5px solid #fca5a5; }
+
+        /* TABS */
+        .tab-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 25px;
+            background: rgba(0, 0, 0, 0.25);
+            padding: 6px;
+            border-radius: 50px;
+            backdrop-filter: blur(8px);
+        }
+
+        .tab-btn {
+            flex: 1;
+            padding: 12px 18px;
+            border: none;
+            background: transparent;
+            color: #94a3b8;
+            font-weight: 700;
+            font-size: 0.92rem;
+            border-radius: 40px;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .tab-btn.active {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
+            color: white;
+            box-shadow: 0 4px 15px var(--accent-glow);
+        }
+
+        /* KPIS GRID */
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+
+        @media (max-width: 640px) {
+            .kpi-grid { grid-template-columns: 1fr; }
+        }
+
+        .kpi-card {
+            background: var(--card-bg);
+            padding: 18px;
+            border-radius: var(--radius-lg);
+            text-align: center;
+            box-shadow: var(--shadow);
+            border: 1px solid rgba(255, 255, 255, 0.8);
+        }
+
+        .kpi-card h4 {
+            font-size: 0.78rem;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            color: var(--text-muted);
+            margin-bottom: 6px;
+            font-weight: 700;
+        }
+
+        .kpi-card .number {
+            font-size: 1.8rem;
+            font-weight: 800;
+            color: var(--text-main);
+        }
+
+        .kpi-card.alert .number { color: var(--danger); }
+
+        /* FORM GRID */
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 25px;
+        }
+
+        @media (max-width: 768px) {
+            .form-grid { grid-template-columns: 1fr; }
+        }
+
+        .form-group { margin-bottom: 14px; }
+        .form-group label {
+            display: block;
+            font-size: 0.82rem;
+            font-weight: 700;
+            color: #475569;
+            margin-bottom: 6px;
+            text-transform: uppercase;
+        }
+
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 11px 14px;
+            border: 1.5px solid #cbd5e1;
+            border-radius: var(--radius-md);
+            font-size: 0.95rem;
+            outline: none;
+            transition: border 0.2s;
+            background: #f8fafc;
+        }
+
+        .form-group input:focus, .form-group select:focus {
+            border-color: var(--primary);
+            background: #fff;
+        }
+
+        .btn-action {
+            width: 100%;
+            padding: 13px;
+            border: none;
+            border-radius: var(--radius-md);
+            font-weight: 700;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            color: white;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            margin-top: 6px;
+        }
+
+        .btn-salida { background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); }
+        .btn-salida:hover { box-shadow: 0 6px 18px rgba(239, 68, 68, 0.4); transform: translateY(-1px); }
+
+        .btn-entrada { background: linear-gradient(135deg, #10b981 0%, #059669 100%); }
+        .btn-entrada:hover { box-shadow: 0 6px 18px rgba(16, 185, 129, 0.4); transform: translateY(-1px); }
+
+        /* TABLA DE PRODUCTOS */
+        .table-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .search-input {
+            padding: 10px 16px;
+            border: 1.5px solid #cbd5e1;
+            border-radius: 30px;
+            font-size: 0.9rem;
+            width: 260px;
+            outline: none;
+            background: #f8fafc;
+        }
+
+        .search-input:focus { border-color: var(--primary); background: white; }
+
+        .table-wrapper {
+            overflow-x: auto;
+            border-radius: var(--radius-lg);
+            border: 1px solid #e2e8f0;
+        }
+
+        table { width: 100%; border-collapse: collapse; background: white; text-align: left; }
+        th { background: #f8fafc; color: #475569; font-size: 0.8rem; text-transform: uppercase; font-weight: 700; padding: 14px 16px; border-bottom: 1px solid #e2e8f0; }
+        td { padding: 14px 16px; border-bottom: 1px solid #f1f5f9; font-size: 0.92rem; color: #334155; }
+        tr:last-child td { border-bottom: none; }
+
+        .badge {
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.78rem;
+            font-weight: 700;
+            display: inline-block;
+        }
+        .badge-success { background: var(--success-bg); color: #047857; }
+        .badge-warning { background: var(--warning-bg); color: #b45309; }
+        .badge-danger { background: var(--danger-bg); color: #b91c1c; }
+
+        /* TOAST NOTIFICATION */
+        #toast {
+            position: fixed;
+            bottom: 25px;
+            right: 25px;
+            padding: 14px 22px;
+            border-radius: var(--radius-lg);
+            color: white;
+            font-weight: 600;
+            font-size: 0.95rem;
+            display: none;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.25);
+            z-index: 1000;
+            animation: slideUp 0.3s ease-out;
+        }
+        @keyframes slideUp {
+            from { transform: translateY(20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        .toast-success { background: #10b981; }
+        .toast-error { background: #ef4444; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- MARCA & TITULO -->
+        <header>
+            <div class="brand-logo">✨ Pole Dance Rojas Sport</div>
+            <div class="brand-subtitle">SISTEMA INTEGRAL DE INVENTARIO Y DISPONIBILIDAD</div>
+        </header>
+
+        <!-- BUSCADOR DE DISPONIBILIDAD ("¿SE TIENE?") -->
+        <div class="glass-card lookup-box">
+            <div class="card-title">🔍 Consultar Disponibilidad ("¿Se tiene?")</div>
+            <select id="lookup-sku" onchange="ejecutarConsulta()">
+                <option value="">-- Selecciona una prenda o equipo para consultar --</option>
+            </select>
+            <div id="status-display" class="status-card">
+                <h3 id="status-title">---</h3>
+                <p id="status-desc">---</p>
             </div>
+        </div>
 
-            <!-- Navegación de Pestañas -->
-            <div class="tab-nav">
-                <button class="tab-btn active" id="btn-tab-productos" onclick="cambiarPestana('productos')">👗 Ropa y Productos</button>
-                <button class="tab-btn" id="btn-tab-equipamiento" onclick="cambiarPestana('equipamiento')">🪑 Equipamiento y Activos</button>
+        <!-- PESTAÑAS (ROPA / EQUIPOS) -->
+        <div class="tab-group">
+            <button class="tab-btn active" id="btn-tab-productos" onclick="cambiarPestana('productos')">👗 Ropa & Productos</button>
+            <button class="tab-btn" id="btn-tab-equipamiento" onclick="cambiarPestana('equipamiento')">🪑 Equipamiento & Activos</button>
+        </div>
+
+        <!-- KPIS DETALLADOS -->
+        <div class="kpi-grid">
+            <div class="kpi-card">
+                <h4>Catálogo Activo</h4>
+                <div class="number" id="kpi-total-skus">0</div>
             </div>
-
-            <!-- KPIs -->
-            <div class="kpi-grid">
-                <div class="kpi-card">
-                    <h4>Variedad de Ítems</h4>
-                    <div class="number" id="kpi-total-skus">0</div>
-                </div>
-                <div class="kpi-card">
-                    <h4>Stock Físico Total</h4>
-                    <div class="number" id="kpi-total-stock">0</div>
-                </div>
-                <div class="kpi-card warning">
-                    <h4>Agotados / Sin Stock</h4>
-                    <div class="number" id="kpi-sin-stock">0</div>
-                </div>
+            <div class="kpi-card">
+                <h4>Stock Físico Total</h4>
+                <div class="number" id="kpi-total-stock">0</div>
             </div>
+            <div class="kpi-card alert">
+                <h4>Ítems Agotados</h4>
+                <div class="number" id="kpi-sin-stock">0</div>
+            </div>
+        </div>
 
-            <!-- Formularios de Entradas / Salidas -->
-            <div class="actions-grid">
-                <div class="card">
-                    <h3 id="form-salida-title">🛍️ Registrar Venta / Salida</h3>
-                    <label>Seleccionar Ítem:</label>
+        <!-- FORMULARIOS DE REGISTRO DE ENTRADAS Y SALIDAS -->
+        <div class="form-grid">
+            <div class="glass-card">
+                <div class="card-title" id="form-salida-title">🛍️ Registrar Venta / Salida</div>
+                <div class="form-group">
+                    <label>Seleccionar Ítem</label>
                     <select id="v_sku"></select>
-                    
-                    <label>Cantidad a Descontar:</label>
+                </div>
+                <div class="form-group">
+                    <label>Cantidad a Descontar</label>
                     <input type="number" id="v_cant" value="1" min="1">
-                    
-                    <label>Registrado por:</label>
-                    <input type="text" id="v_usuario" placeholder="Ej: María">
-                    
-                    <button class="btn-venta" id="btn-salida-action" onclick="procesarMovimiento('ventas')">Descontar Unidad</button>
                 </div>
+                <div class="form-group">
+                    <label>Registrado por</label>
+                    <input type="text" id="v_usuario" placeholder="Ej: Profesora María">
+                </div>
+                <button class="btn-action btn-salida" id="btn-salida-action" onclick="procesarMovimiento('ventas')">Descontar Unidad</button>
+            </div>
 
-                <div class="card">
-                    <h3 id="form-entrada-title">📦 Registrar Entrada / Compra</h3>
-                    <label>Seleccionar Ítem:</label>
+            <div class="glass-card">
+                <div class="card-title" id="form-entrada-title">📦 Registrar Entrada / Compra</div>
+                <div class="form-group">
+                    <label>Seleccionar Ítem</label>
                     <select id="e_sku"></select>
-                    
-                    <label>Cantidad Ingresada:</label>
-                    <input type="number" id="e_cant" value="1" min="1">
-                    
-                    <label>Registrado por:</label>
-                    <input type="text" id="e_usuario" placeholder="Ej: Admin">
-                    
-                    <button class="btn-entrada" onclick="procesarMovimiento('entradas')">Ingresar Stock</button>
                 </div>
+                <div class="form-group">
+                    <label>Cantidad Ingresada</label>
+                    <input type="number" id="e_cant" value="1" min="1">
+                </div>
+                <div class="form-group">
+                    <label>Registrado por</label>
+                    <input type="text" id="e_usuario" placeholder="Ej: Admin">
+                </div>
+                <button class="btn-action btn-entrada" onclick="procesarMovimiento('entradas')">Ingresar al Stock</button>
             </div>
+        </div>
 
-            <!-- Tabla Stock -->
+        <!-- TABLA PRINCIPAL DE INVENTARIO -->
+        <div class="glass-card">
             <div class="table-header">
-                <h2 id="tabla-titulo">📋 Catálogo de Productos</h2>
-                <input type="text" id="search" class="search-box" placeholder="🔍 Buscar por nombre o SKU..." onkeyup="filtrarTabla()">
+                <div class="card-title" id="tabla-titulo" style="margin-bottom:0;">📋 Listado de Productos</div>
+                <input type="text" id="search" class="search-input" placeholder="🔍 Buscar por nombre o SKU..." onkeyup="filtrarTabla()">
             </div>
-
-            <div class="table-container">
+            <div class="table-wrapper">
                 <table>
                     <thead>
                         <tr>
                             <th>SKU</th>
-                            <th>Descripción</th>
-                            <th>Categoría</th>
+                            <th>Descripción / Producto</th>
                             <th>Estado</th>
-                            <th>Stock Disponible</th>
+                            <th>Disponibles</th>
                         </tr>
                     </thead>
                     <tbody id="tabla-body">
-                        <tr><td colspan="5" style="text-align:center;">Cargando datos...</td></tr>
+                        <tr><td colspan="4" style="text-align:center;">Cargando inventario...</td></tr>
                     </tbody>
                 </table>
             </div>
         </div>
+    </div>
 
-        <div id="toast"></div>
+    <div id="toast"></div>
 
-        <script>
-            let inventarioGlobal = {};
-            let categoriaActual = 'productos';
+    <script>
+        let inventarioGlobal = {};
+        let categoriaActual = 'productos';
 
-            async function cargarInventario() {
-                try {
-                    const res = await fetch('/stock');
-                    inventarioGlobal = await res.json();
-                    
-                    actualizarListaConsulta();
-                    renderizarInterface();
-                } catch(e) {
-                    mostrarToast("Error conectando con el servidor", false);
-                }
-            }
-
-            function actualizarListaConsulta() {
-                const lookupSelect = document.getElementById('lookup-sku');
-                const valorPrevio = lookupSelect.value;
-                lookupSelect.innerHTML = '<option value="">-- Selecciona una prenda o equipo para consultar --</option>';
-
-                for (const [sku, item] of Object.entries(inventarioGlobal)) {
-                    const catTag = item.categoria === 'productos' ? '👗' : '🪑';
-                    lookupSelect.innerHTML += `<option value="${sku}">${catTag} [${sku}] ${item.nombre}</option>`;
-                }
-                if (valorPrevio) {
-                    lookupSelect.value = valorPrevio;
-                    ejecutarConsulta();
-                }
-            }
-
-            function ejecutarConsulta() {
-                const sku = document.getElementById('lookup-sku').value;
-                const display = document.getElementById('status-display');
-                const title = document.getElementById('status-title');
-                const desc = document.getElementById('status-desc');
-
-                if (!sku || !inventarioGlobal[sku]) {
-                    display.style.display = 'none';
-                    return;
-                }
-
-                const item = inventarioGlobal[sku];
-                const stock = item.stock_actual;
-
-                display.style.display = 'block';
-                display.className = 'status-display ';
-
-                if (stock > 2) {
-                    display.classList.add('status-available');
-                    title.innerHTML = '🟢 SÍ HAY DISPONIBILIDAD';
-                    desc.innerHTML = `Quedan <b>${stock} unidades</b> disponibles de <i>${item.nombre}</i> (${sku}).`;
-                } else if (stock > 0) {
-                    display.classList.add('status-low');
-                    title.innerHTML = '⚠️ ÚLTIMAS UNIDADES';
-                    desc.innerHTML = `¡Atención! Solo quedan <b>${stock} unidad(es)</b> de <i>${item.nombre}</i> (${sku}).`;
-                } else {
-                    display.classList.add('status-empty');
-                    title.innerHTML = '🔴 NO HAY STOCK (AGOTADO)';
-                    desc.innerHTML = `Actualmente hay <b>0 unidades</b> de <i>${item.nombre}</i> (${sku}).`;
-                }
-            }
-
-            function cambiarPestana(cat) {
-                categoriaActual = cat;
-                document.getElementById('btn-tab-productos').classList.toggle('active', cat === 'productos');
-                document.getElementById('btn-tab-equipamiento').classList.toggle('active', cat === 'equipamiento');
-                
-                if (cat === 'productos') {
-                    document.getElementById('tabla-titulo').innerText = '📋 Catálogo de Productos (Ropa)';
-                    document.getElementById('form-salida-title').innerText = '🛍️ Registrar Venta';
-                    document.getElementById('btn-salida-action').innerText = 'Descontar Venta';
-                } else {
-                    document.getElementById('tabla-titulo').innerText = '🪑 Equipamiento y Mobiliario';
-                    document.getElementById('form-salida-title').innerText = '⚠️ Registrar Salida / Baja / Daño';
-                    document.getElementById('btn-salida-action').innerText = 'Descontar Equipamiento';
-                }
-                
+        async function cargarInventario() {
+            try {
+                const res = await fetch('/stock');
+                inventarioGlobal = await res.json();
+                actualizarListaConsulta();
                 renderizarInterface();
+            } catch(e) {
+                mostrarToast("Error de conexión con el servidor", false);
+            }
+        }
+
+        function actualizarListaConsulta() {
+            const lookupSelect = document.getElementById('lookup-sku');
+            const valorPrevio = lookupSelect.value;
+            lookupSelect.innerHTML = '<option value="">-- Selecciona una prenda o equipo para consultar --</option>';
+
+            for (const [sku, item] of Object.entries(inventarioGlobal)) {
+                const catTag = item.categoria === 'productos' ? '👗' : '🪑';
+                lookupSelect.innerHTML += `<option value="${sku}">${catTag} [${sku}] ${item.nombre}</option>`;
+            }
+            if (valorPrevio) {
+                lookupSelect.value = valorPrevio;
+                ejecutarConsulta();
+            }
+        }
+
+        function ejecutarConsulta() {
+            const sku = document.getElementById('lookup-sku').value;
+            const display = document.getElementById('status-display');
+            const title = document.getElementById('status-title');
+            const desc = document.getElementById('status-desc');
+
+            if (!sku || !inventarioGlobal[sku]) {
+                display.style.display = 'none';
+                return;
             }
 
-            function renderizarInterface() {
-                const tbody = document.getElementById('tabla-body');
-                const vSelect = document.getElementById('v_sku');
-                const eSelect = document.getElementById('e_sku');
+            const item = inventarioGlobal[sku];
+            const stock = item.stock_actual;
+
+            display.style.display = 'block';
+            display.className = 'status-card ';
+
+            if (stock > 2) {
+                display.classList.add('status-available');
+                title.innerHTML = '🟢 SÍ HAY DISPONIBILIDAD';
+                desc.innerHTML = `Tenemos <b>${stock} unidades</b> disponibles de <i>${item.nombre}</i>.`;
+            } else if (stock > 0) {
+                display.classList.add('status-low');
+                title.innerHTML = '⚠️ ÚLTIMAS UNIDADES';
+                desc.innerHTML = `¡Atención! Quedan solo <b>${stock} unidad(es)</b> disponibles de <i>${item.nombre}</i>.`;
+            } else {
+                display.classList.add('status-empty');
+                title.innerHTML = '🔴 AGOTADO';
+                desc.innerHTML = `Actualmente hay <b>0 unidades</b> de <i>${item.nombre}</i>.`;
+            }
+        }
+
+        function cambiarPestana(cat) {
+            categoriaActual = cat;
+            document.getElementById('btn-tab-productos').classList.toggle('active', cat === 'productos');
+            document.getElementById('btn-tab-equipamiento').classList.toggle('active', cat === 'equipamiento');
+            
+            if (cat === 'productos') {
+                document.getElementById('tabla-titulo').innerText = '📋 Catálogo de Prendas y Productos';
+                document.getElementById('form-salida-title').innerText = '🛍️ Registrar Venta';
+                document.getElementById('btn-salida-action').innerText = 'Descontar Venta';
+            } else {
+                document.getElementById('tabla-titulo').innerText = '🪑 Equipamiento y Activos Fijos';
+                document.getElementById('form-salida-title').innerText = '⚠️ Registrar Salida / Baja';
+                document.getElementById('btn-salida-action').innerText = 'Descontar Equipamiento';
+            }
+            
+            renderizarInterface();
+        }
+
+        function renderizarInterface() {
+            const tbody = document.getElementById('tabla-body');
+            const vSelect = document.getElementById('v_sku');
+            const eSelect = document.getElementById('e_sku');
+            
+            tbody.innerHTML = '';
+            vSelect.innerHTML = '';
+            eSelect.innerHTML = '';
+
+            let totalSkus = 0;
+            let totalStock = 0;
+            let sinStock = 0;
+
+            for (const [sku, item] of Object.entries(inventarioGlobal)) {
+                if (item.categoria !== categoriaActual) continue;
+
+                totalSkus++;
+                totalStock += item.stock_actual;
+                if (item.stock_actual <= 0) sinStock++;
+
+                const optionText = `${sku} - ${item.nombre}`;
+                vSelect.innerHTML += `<option value="${sku}">${optionText}</option>`;
+                eSelect.innerHTML += `<option value="${sku}">${optionText}</option>`;
+
+                let badgeClass = 'badge-success';
+                let estadoTexto = 'Disponible';
                 
-                tbody.innerHTML = '';
-                vSelect.innerHTML = '';
-                eSelect.innerHTML = '';
+                if (item.stock_actual <= 0) {
+                    badgeClass = 'badge-danger';
+                    estadoTexto = 'Agotado';
+                } else if (item.stock_actual <= 2) {
+                    badgeClass = 'badge-warning';
+                    estadoTexto = 'Stock Bajo';
+                }
+                
+                tbody.innerHTML += `
+                    <tr>
+                        <td><b>${sku}</b></td>
+                        <td>${item.nombre}</td>
+                        <td><span class="badge ${badgeClass}">${estadoTexto}</span></td>
+                        <td><b>${item.stock_actual} ud.</b></td>
+                    </tr>
+                `;
+            }
 
-                let totalSkus = 0;
-                let totalStock = 0;
-                let sinStock = 0;
+            document.getElementById('kpi-total-skus').innerText = totalSkus;
+            document.getElementById('kpi-total-stock').innerText = totalStock;
+            document.getElementById('kpi-sin-stock').innerText = sinStock;
+        }
 
-                for (const [sku, item] of Object.entries(inventarioGlobal)) {
-                    if (item.categoria !== categoriaActual) continue;
+        function filtrarTabla() {
+            const query = document.getElementById('search').value.toLowerCase();
+            const tbody = document.getElementById('tabla-body');
+            tbody.innerHTML = '';
 
-                    totalSkus++;
-                    totalStock += item.stock_actual;
-                    if (item.stock_actual <= 0) sinStock++;
+            for (const [sku, item] of Object.entries(inventarioGlobal)) {
+                if (item.categoria !== categoriaActual) continue;
 
-                    const optionText = `${sku} - ${item.nombre}`;
-                    vSelect.innerHTML += `<option value="${sku}">${optionText}</option>`;
-                    eSelect.innerHTML += `<option value="${sku}">${optionText}</option>`;
-
-                    let badgeClass = 'badge-success';
-                    let estadoTexto = 'Disponible';
-                    
-                    if (item.stock_actual <= 0) {
-                        badgeClass = 'badge-danger';
-                        estadoTexto = 'Agotado';
-                    } else if (item.stock_actual <= 2) {
-                        badgeClass = 'badge-warning';
-                        estadoTexto = 'Stock Bajo';
-                    }
-
-                    const catTag = item.categoria === 'productos' ? 'Ropa' : 'Equipamiento';
+                if (sku.toLowerCase().includes(query) || item.nombre.toLowerCase().includes(query)) {
+                    let badgeClass = item.stock_actual > 0 ? (item.stock_actual <= 2 ? 'badge-warning' : 'badge-success') : 'badge-danger';
+                    let estadoTexto = item.stock_actual > 0 ? (item.stock_actual <= 2 ? 'Stock Bajo' : 'Disponible') : 'Agotado';
                     
                     tbody.innerHTML += `
                         <tr>
                             <td><b>${sku}</b></td>
                             <td>${item.nombre}</td>
-                            <td><small>${catTag}</small></td>
                             <td><span class="badge ${badgeClass}">${estadoTexto}</span></td>
                             <td><b>${item.stock_actual} ud.</b></td>
                         </tr>
                     `;
                 }
+            }
+        }
 
-                document.getElementById('kpi-total-skus').innerText = totalSkus;
-                document.getElementById('kpi-total-stock').innerText = totalStock;
-                document.getElementById('kpi-sin-stock').innerText = sinStock;
+        async function procesarMovimiento(tipo) {
+            const prefix = tipo === 'ventas' ? 'v_' : 'e_';
+            const sku = document.getElementById(prefix + 'sku').value;
+            const cantidad = parseInt(document.getElementById(prefix + 'cant').value);
+            const registrado_por = document.getElementById(prefix + 'usuario').value;
+
+            if (!registrado_por.trim()) {
+                mostrarToast("Por favor ingresa tu nombre", false);
+                return;
             }
 
-            function filtrarTabla() {
-                const query = document.getElementById('search').value.toLowerCase();
-                const tbody = document.getElementById('tabla-body');
-                tbody.innerHTML = '';
+            try {
+                const res = await fetch('/' + tipo, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ sku, cantidad, registrado_por })
+                });
 
-                for (const [sku, item] of Object.entries(inventarioGlobal)) {
-                    if (item.categoria !== categoriaActual) continue;
+                const data = await res.json();
 
-                    if (sku.toLowerCase().includes(query) || item.nombre.toLowerCase().includes(query)) {
-                        let badgeClass = item.stock_actual > 0 ? (item.stock_actual <= 2 ? 'badge-warning' : 'badge-success') : 'badge-danger';
-                        let estadoTexto = item.stock_actual > 0 ? (item.stock_actual <= 2 ? 'Stock Bajo' : 'Disponible') : 'Agotado';
-                        const catTag = item.categoria === 'productos' ? 'Ropa' : 'Equipamiento';
-                        
-                        tbody.innerHTML += `
-                            <tr>
-                                <td><b>${sku}</b></td>
-                                <td>${item.nombre}</td>
-                                <td><small>${catTag}</small></td>
-                                <td><span class="badge ${badgeClass}">${estadoTexto}</span></td>
-                                <td><b>${item.stock_actual} ud.</b></td>
-                            </tr>
-                        `;
-                    }
+                if (res.ok) {
+                    mostrarToast(data.mensaje, true);
+                    cargarInventario();
+                } else {
+                    mostrarToast(data.detail || "Error al registrar movimiento", false);
                 }
+            } catch(e) {
+                mostrarToast("Error de conexión con el servidor", false);
             }
+        }
 
-            async function procesarMovimiento(tipo) {
-                const prefix = tipo === 'ventas' ? 'v_' : 'e_';
-                const sku = document.getElementById(prefix + 'sku').value;
-                const cantidad = parseInt(document.getElementById(prefix + 'cant').value);
-                const registrado_por = document.getElementById(prefix + 'usuario').value;
+        function mostrarToast(mensaje, esExito) {
+            const toast = document.getElementById('toast');
+            toast.innerText = mensaje;
+            toast.className = esExito ? 'toast-success' : 'toast-error';
+            toast.style.display = 'block';
+            setTimeout(() => { toast.style.display = 'none'; }, 3500);
+        }
 
-                if (!registrado_por.trim()) {
-                    mostrarToast("Por favor ingresa tu nombre", false);
-                    return;
-                }
-
-                try {
-                    const res = await fetch('/' + tipo, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ sku, cantidad, registrado_por })
-                    });
-
-                    const data = await res.json();
-
-                    if (res.ok) {
-                        mostrarToast(data.mensaje, true);
-                        cargarInventario();
-                    } else {
-                        mostrarToast(data.detail || "Error al registrar movimiento", false);
-                    }
-                } catch(e) {
-                    mostrarToast("Error de conexión con el servidor", false);
-                }
-            }
-
-            function mostrarToast(mensaje, esExito) {
-                const toast = document.getElementById('toast');
-                toast.innerText = mensaje;
-                toast.className = esExito ? 'toast-success' : 'toast-error';
-                toast.style.display = 'block';
-                setTimeout(() => { toast.style.display = 'none'; }, 3500);
-            }
-
-            cargarInventario();
-        </script>
-    </body>
-    </html>
-    """
+        cargarInventario();
+    </script>
+</body>
+</html>"""
 
 @app.get("/stock", tags=["API"])
 def ver_stock():
