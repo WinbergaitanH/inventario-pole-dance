@@ -18,9 +18,17 @@ def cargar_inventario_desde_excel():
     inventario = {}
     for index, row in df_catalogo.iterrows():
         sku = str(row.iloc[0]).strip()
-        if pd.notna(sku) and sku != "nan":
+        
+        # Ignorar celdas vacías o filas de encabezados
+        if pd.notna(sku) and sku.lower() not in ["nan", "sku", "código", "codigo"]:
             nombre = f"{row.iloc[2]} ({row.iloc[1]}) - Talla {row.iloc[3]}"
-            stock_ini = int(row.iloc[6]) if pd.notna(row.iloc[6]) else 0
+            
+            # Convertir a entero de forma segura (evita error si encuentra texto como 'Stock Inicial')
+            try:
+                stock_ini = int(row.iloc[6])
+            except (ValueError, TypeError):
+                stock_ini = 0
+
             inventario[sku] = {
                 "nombre": nombre,
                 "stock_inicial": stock_ini,
