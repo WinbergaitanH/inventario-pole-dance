@@ -1,4 +1,3 @@
-Python
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 import pandas as pd
@@ -78,4 +77,4 @@ def registrar_venta(mov: Movimiento):
     
     item["ventas"] += mov.cantidad
     nuevo_stock = stock_disponible - mov.cantidad
-    return {"mensaje": f"Venta registrada por {mov.registrado_por}", "stock_restante": nuevo_
+    return {"mensaje": f"Venta registrada por {mov.registrado_por}", "stock_restante": nuevo_stock}
