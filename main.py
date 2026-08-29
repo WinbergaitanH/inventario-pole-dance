@@ -3,11 +3,12 @@ from fastapi.responses import HTMLResponse, FileResponse
 from pydantic import BaseModel, Field
 import pandas as pd
 import os
+import uvicorn
 
 app = FastAPI(
     title="Pole Dance Rojas Sport - Inventario & Activos",
     description="Sistema de control de inventario y disponibilidad para Pole Dance Rojas Sport",
-    version="6.0.0"
+    version="6.5.0"
 )
 
 EXCEL_PATH = "Control_Inventario_Pole_Dance.xlsx"
@@ -60,7 +61,7 @@ def cargar_inventario_desde_excel():
         except Exception:
             pass
 
-    # Equipamiento base por defecto
+    # Equipamiento base por defecto si no existen en Excel
     items_base_equipamiento = {
         "EQ-TUBO": "Tubo Pole Dance Profesional",
         "EQ-MAT": "Mat / Colchoneta de Caída",
@@ -81,6 +82,7 @@ def cargar_inventario_desde_excel():
 
     return inventario
 
+# Carga inicial de datos
 inventario_db = cargar_inventario_desde_excel()
 
 class Movimiento(BaseModel):
@@ -142,7 +144,6 @@ def interfaz_usuario():
             border: 1px solid rgba(255, 255, 255, 0.12);
             margin-bottom: 25px;
             box-shadow: var(--shadow);
-            position: relative;
         }
 
         .brand-logo {
@@ -164,7 +165,14 @@ def interfaz_usuario():
             margin-bottom: 15px;
         }
 
-        .btn-download-top {
+        .header-buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .btn-top {
             display: inline-flex;
             align-items: center;
             gap: 8px;
@@ -177,11 +185,17 @@ def interfaz_usuario():
             font-weight: 600;
             border: 1px solid rgba(255, 255, 255, 0.25);
             transition: all 0.2s ease;
+            cursor: pointer;
         }
 
-        .btn-download-top:hover {
+        .btn-top:hover {
             background: rgba(255, 255, 255, 0.25);
             transform: translateY(-2px);
+        }
+
+        .btn-reload {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
+            border: none;
         }
 
         .glass-card {
@@ -423,7 +437,10 @@ def interfaz_usuario():
         <header>
             <div class="brand-logo">✨ Pole Dance Rojas Sport</div>
             <div class="brand-subtitle">SISTEMA INTEGRAL DE INVENTARIO Y DISPONIBILIDAD</div>
-            <a href="/descargar-excel" class="btn-download-top">📥 Descargar Base de Datos (Excel)</a>
+            <div class="header-buttons">
+                <a href="/descargar-excel" class="btn-top">📥 Descargar Excel</a>
+                <button onclick="recargarDesdeExcel()" class="btn-top btn-reload">🔄 Sincronizar Cambios de Excel</button>
+            </div>
         </header>
 
         <div class="glass-card lookup-box">
@@ -532,6 +549,21 @@ def interfaz_usuario():
                 const res = await fetch('/stock');
                 inventarioGlobal = await res.json();
                 renderizarInterface();
+            } catch(e) {
+                mostrarToast("Error de conexión con el servidor", false);
+            }
+        }
+
+        async function recargarDesdeExcel() {
+            try {
+                const res = await fetch('/recargar', { method: 'POST' });
+                const data = await res.json();
+                if (res.ok) {
+                    mostrarToast(data.mensaje, true);
+                    cargarInventario();
+                } else {
+                    mostrarToast("Error al recargar el archivo Excel", false);
+                }
             } catch(e) {
                 mostrarToast("Error de conexión con el servidor", false);
             }
@@ -813,6 +845,12 @@ def ver_stock():
         }
     return resultado
 
+@app.post("/recargar", tags=["API"])
+def recargar_excel():
+    global inventario_db
+    inventario_db = cargar_inventario_desde_excel()
+    return {"mensaje": "✅ Datos sincronizados con el archivo Excel exitosamente."}
+
 @app.get("/descargar-excel", tags=["API"])
 def descargar_excel():
     if os.path.exists(EXCEL_PATH):
@@ -855,3 +893,6 @@ def registrar_venta(mov: Movimiento):
         "mensaje": f"🛒 Registrada salida de {mov.cantidad} ud. de {inventario_db[mov.sku]['nombre']}",
         "stock_actual": nuevo_stock
     }
+
+if __name__ == "__main__":
+    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
