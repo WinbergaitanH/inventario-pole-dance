@@ -1,0 +1,6 @@
+Plaintext
+fastapi
+uvicorn
+pydantic
+pandas
+openpyxl
