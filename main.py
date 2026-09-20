@@ -1,16 +1,15 @@
+import os
+import shutil
+import pandas as pd
 from fastapi import FastAPI, HTTPException, UploadFile, File
 from fastapi.responses import HTMLResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
-import pandas as pd
-import os
-import shutil
-import uvicorn
 
 app = FastAPI(
     title="Pole Dance Rojas Sport - Inventario & Activos",
     description="Sistema de control de inventario y disponibilidad para Pole Dance Rojas Sport",
-    version="9.0.0"
+    version="9.5.0"
 )
 
 EXCEL_PATH = "Control_Inventario_Pole_Dance.xlsx"
@@ -18,7 +17,6 @@ FOTOS_DIR = "static/fotos"
 os.makedirs(FOTOS_DIR, exist_ok=True)
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
-# Diccionarios globales para mantener el registro de movimientos en memoria
 historial_entradas = {}  # {sku: cantidad}
 historial_ventas = {}    # {sku: cantidad}
 
@@ -164,7 +162,6 @@ def guardar_inventario_en_excel():
             df = pd.read_excel(EXCEL_PATH, sheet_name=sheet)
             col_map = {str(c).strip().lower(): c for c in df.columns}
 
-            # Actualizar hoja de productos
             if any(kw in sheet.lower() for kw in PALABRAS_CATALOGO):
                 col_sku = next((col_map[k] for k in col_map if 'sku' in k or 'código' in k or 'codigo' in k), None)
                 col_entradas = next((col_map[k] for k in col_map if 'entrada' in k), None)
@@ -416,21 +413,21 @@ def interfaz_usuario():
         .autocomplete-results {
             position: absolute; top: 105%; left: 0; right: 0; background: white;
             border-radius: var(--radius-lg); box-shadow: 0 10px 25px rgba(0,0,0,0.2);
-            border: 1px solid #cbd5e1; max-height: 260px; overflow-y: auto; z-index: 100; display: none;
+            border: 1px solid #cbd5e1; max-height: 280px; overflow-y: auto; z-index: 100; display: none;
         }
         .autocomplete-item {
             padding: 10px 16px; cursor: pointer; border-bottom: 1px solid #f1f5f9;
-            font-size: 0.9rem; display: flex; justify-content: space-between; align-items: center; gap: 10px;
+            font-size: 0.9rem; display: flex; justify-content: space-between; align-items: center; gap: 12px;
         }
         .autocomplete-item:hover { background-color: #f0fdf4; color: var(--primary-dark); }
         .autocomplete-thumb {
-            width: 34px; height: 34px; border-radius: 8px; object-fit: cover; flex-shrink: 0;
-            background: #f1f5f9;
+            width: 44px; height: 44px; border-radius: 8px; object-fit: cover; flex-shrink: 0;
+            background: #e2e8f0; border: 1px solid #cbd5e1; display: block;
         }
 
         .status-card { margin-top: 18px; padding: 18px 20px; border-radius: var(--radius-lg); display: none; }
         .status-card-inner { display: flex; gap: 16px; align-items: center; }
-        .status-foto { width: 72px; height: 72px; border-radius: var(--radius-md); object-fit: cover; background: #e2e8f0; flex-shrink: 0; }
+        .status-foto { width: 80px; height: 80px; border-radius: var(--radius-md); object-fit: cover; background: #e2e8f0; flex-shrink: 0; border: 1px solid rgba(0,0,0,0.1); }
         .status-card h3 { font-size: 1.3rem; font-weight: 800; margin-bottom: 4px; }
         .status-card p { font-size: 0.95rem; font-weight: 500; }
         .status-available { background: var(--success-bg); color: #047857; border: 1.5px solid #a7f3d0; }
@@ -438,9 +435,9 @@ def interfaz_usuario():
         .status-empty { background: var(--danger-bg); color: #b91c1c; border: 1.5px solid #fca5a5; }
 
         .foto-upload-btn {
-            margin-top: 10px; font-size: 0.78rem; font-weight: 700; color: var(--primary-dark);
+            margin-top: 10px; font-size: 0.8rem; font-weight: 700; color: var(--primary-dark);
             background: rgba(217, 70, 239, 0.1); border: 1px solid var(--primary);
-            padding: 5px 12px; border-radius: 20px; cursor: pointer; display: inline-block;
+            padding: 6px 14px; border-radius: 20px; cursor: pointer; display: inline-block; text-align: center;
         }
 
         .tab-group {
@@ -598,6 +595,16 @@ def interfaz_usuario():
                 </div>
                 <div class="form-group"><label>Cantidad Ingresada</label><input type="number" id="e_cant" value="1" min="1"></div>
                 <div class="form-group"><label>Registrado por</label><input type="text" id="e_usuario" placeholder="Ej: Admin"></div>
+                
+                <!-- Opción de tomar / subir foto directa en la entrada -->
+                <div class="form-group">
+                    <label>Adjuntar / Tomar Foto del Producto</label>
+                    <label class="foto-upload-btn" style="width: 100%; display: block;">
+                        📸 Tomar o Subir Foto del Producto
+                        <input type="file" accept="image/*" capture="environment" id="e_foto_input" style="display:none;" onchange="subirFotoDesdeEntrada(this.files[0])">
+                    </label>
+                </div>
+
                 <button class="btn-action btn-entrada" onclick="procesarMovimiento('entradas')">Ingresar al Stock</button>
             </div>
         </div>
@@ -613,7 +620,7 @@ def interfaz_usuario():
                         <tr><th></th><th>SKU</th><th>Descripción / Producto</th><th>Estado</th><th>Stock</th><th>Acción</th></tr>
                     </thead>
                     <tbody id="tabla-body">
-                        <tr><td colspan="6" class="empty-hint">Escribe algo arriba para buscar, o espera a que cargue la primera página...</td></tr>
+                        <tr><td colspan="6" class="empty-hint">Cargando datos...</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -672,196 +679,220 @@ def interfaz_usuario():
                     } else {
                         listDiv.innerHTML = data.items.map(item => {
                             const catTag = item.categoria === 'productos' ? '👗' : '🪑';
-                            const stockTag = item.stock_actual > 0 ? `<b>${item.stock_actual} ud.</b>` : '<span style="color:#ef4444;font-weight:bold;">Agotado</span>';
-                            const thumb = item.foto_url ? `<img class="autocomplete-thumb" src="${item.foto_url}">` : '';
-                            return `<div class="autocomplete-item" onclick='seleccionarDatoConsulta(${JSON.stringify(item.sku)})'>
-                                        <span style="display:flex;align-items:center;gap:8px;">${thumb}${catTag} <b>[${item.sku}]</b> ${item.nombre}</span>
-                                        <span>${stockTag}</span>
+                            const stockTag = item.stock_actual > 0 ? `<b>${item.stock_actual} ud.</b>` : '<span style="color:#ef4444;">Agotado</span>';
+                            const img = item.foto_url 
+                                ? `<img src="${item.foto_url}" class="autocomplete-thumb">` 
+                                : '<div class="autocomplete-thumb" style="display:flex;align-items:center;justify-content:center;font-size:1.2rem;">🖼️</div>';
+                            return `<div class="autocomplete-item" onclick="seleccionarResultado('${item.sku}')">
+                                        <div style="display:flex; align-items:center; gap:10px;">
+                                            ${img}
+                                            <div><strong>[${item.sku}]</strong> ${item.nombre} <small style="color:#64748b;">${catTag}</small></div>
+                                        </div>
+                                        <div>${stockTag}</div>
                                     </div>`;
                         }).join('');
                     }
                     listDiv.style.display = 'block';
-                } catch(e) { mostrarToast("Error de conexión con el servidor", false); }
+                } catch(e) {}
             }, 250);
         }
 
-        async function seleccionarDatoConsulta(sku) {
+        async function seleccionarResultado(sku) {
             document.getElementById('autocomplete-list').style.display = 'none';
             try {
                 const data = await buscar(sku, '', 1, 0);
-                const item = data.items.find(i => i.sku === sku) || data.items[0];
-                if (!item) return;
-                document.getElementById('lookup-input').value = item.nombre;
-                if (item.categoria !== categoriaActual) cambiarPestana(item.categoria);
-                mostrarConsulta(item);
-                document.getElementById('v_search').value = item.sku;
-                document.getElementById('e_search').value = item.sku;
-                buscarParaSelect('v_sku', item.sku);
-                buscarParaSelect('e_sku', item.sku);
-            } catch(e) { mostrarToast("Error de conexión con el servidor", false); }
+                if (data.items.length > 0) {
+                    const item = data.items[0];
+                    mostrarTarjetaEstado(item);
+                }
+            } catch(e) {}
         }
 
-        function mostrarConsulta(item) {
-            const display = document.getElementById('status-display');
+        function mostrarTarjetaEstado(item) {
+            skuSeleccionadoParaFoto = item.sku;
+            const box = document.getElementById('status-display');
             const title = document.getElementById('status-title');
             const desc = document.getElementById('status-desc');
             const foto = document.getElementById('status-foto');
 
-            skuSeleccionadoParaFoto = item.sku;
-            if (item.foto_url) { foto.src = item.foto_url; foto.style.display = 'block'; }
-            else { foto.style.display = 'none'; }
-
-            display.style.display = 'block';
-            display.className = 'status-card ';
-            const stock = item.stock_actual;
-            if (stock > 2) {
-                display.classList.add('status-available');
-                title.innerHTML = '🟢 SÍ HAY DISPONIBILIDAD';
-                desc.innerHTML = `Tenemos <b>${stock} unidades</b> disponibles de <i>${item.nombre}</i>.`;
-            } else if (stock > 0) {
-                display.classList.add('status-low');
-                title.innerHTML = '⚠️ ÚLTIMAS UNIDADES';
-                desc.innerHTML = `¡Atención! Quedan solo <b>${stock} unidad(es)</b> disponibles de <i>${item.nombre}</i>.`;
+            if (item.foto_url) {
+                foto.src = item.foto_url + '?t=' + Date.now();
+                foto.style.display = 'block';
             } else {
-                display.classList.add('status-empty');
-                title.innerHTML = '🔴 AGOTADO';
-                desc.innerHTML = `Actualmente hay <b>0 unidades</b> de <i>${item.nombre}</i>.`;
+                foto.style.display = 'none';
             }
+
+            title.innerText = item.nombre;
+            const precioStr = item.precio_venta > 0 ? ` | $${item.precio_venta.toLocaleString()} COP` : '';
+
+            if (item.stock_actual > 2) {
+                box.className = 'status-card status-available';
+                desc.innerText = `✅ Disponible: ${item.stock_actual} unidades (${item.sku})${precioStr}`;
+            } else if (item.stock_actual > 0) {
+                box.className = 'status-card status-low';
+                desc.innerText = `⚠️ Últimas unidades: ${item.stock_actual} disponibles (${item.sku})${precioStr}`;
+            } else {
+                box.className = 'status-card status-empty';
+                desc.innerText = `❌ AGOTADO: 0 unidades en inventario (${item.sku})${precioStr}`;
+            }
+            box.style.display = 'block';
         }
 
         async function subirFoto(file) {
-            if (!file || !skuSeleccionadoParaFoto) return;
+            if (!file || !skuSeleccionadoParaFoto) {
+                mostrarToast('Selecciona primero un producto en la búsqueda rápida', false);
+                return;
+            }
             const formData = new FormData();
             formData.append('archivo', file);
             try {
-                const res = await fetch('/fotos/' + encodeURIComponent(skuSeleccionadoParaFoto), { method: 'POST', body: formData });
+                const res = await fetch(`/fotos/${skuSeleccionadoParaFoto}`, { method: 'POST', body: formData });
                 const data = await res.json();
                 if (res.ok) {
-                    mostrarToast('📷 Foto guardada', true);
-                    document.getElementById('status-foto').src = data.foto_url + '?t=' + Date.now();
-                    document.getElementById('status-foto').style.display = 'block';
+                    mostrarToast('📷 Foto actualizada con éxito', true);
+                    seleccionarResultado(skuSeleccionadoParaFoto);
                     refrescarTabla();
                 } else {
-                    mostrarToast(data.detail || 'Error al subir foto', false);
+                    mostrarToast(data.detail || 'Error al subir la foto', false);
                 }
-            } catch(e) { mostrarToast('Error de conexión', false); }
+            } catch(e) {
+                mostrarToast('Error en la conexión al subir foto', false);
+            }
         }
 
-        function buscarParaSelect(selectId, query) {
-            if (query.trim().length < 2) return;
+        async function subirFotoDesdeEntrada(file) {
+            const sku = document.getElementById('e_sku').value;
+            if (!sku) {
+                mostrarToast('Por favor selecciona primero un producto en la lista de entradas', false);
+                return;
+            }
+            if (!file) return;
+
+            const formData = new FormData();
+            formData.append('archivo', file);
+            try {
+                const res = await fetch(`/fotos/${sku}`, { method: 'POST', body: formData });
+                const data = await res.json();
+                if (res.ok) {
+                    mostrarToast('📸 Foto del producto registrada con éxito', true);
+                    seleccionarResultado(sku);
+                    refrescarTabla();
+                } else {
+                    mostrarToast(data.detail || 'Error al guardar la foto', false);
+                }
+            } catch(e) {
+                mostrarToast('Error de conexión al subir la foto', false);
+            }
+        }
+
+        function cambiarPestana(cat) {
+            categoriaActual = cat;
+            document.getElementById('btn-tab-productos').className = cat === 'productos' ? 'tab-btn active' : 'tab-btn';
+            document.getElementById('btn-tab-equipamiento').className = cat === 'equipamiento' ? 'tab-btn active' : 'tab-btn';
+            document.getElementById('tabla-titulo').innerText = cat === 'productos' ? '📋 Listado de Productos' : '🪑 Listado de Equipamiento & Activos';
+            document.getElementById('form-salida-title').innerText = cat === 'productos' ? '🛍️ Registrar Venta / Salida' : '🔻 Registrar Salida / Baje de Activo';
+            document.getElementById('btn-salida-action').innerText = cat === 'productos' ? 'Descontar Unidad' : 'Registrar Salida';
+            
+            cargarKpis();
+            refrescarTabla();
+        }
+
+        function buscarParaSelect(selectId, term) {
+            if (term.length < 2) return;
             debounce(async () => {
                 try {
-                    const data = await buscar(query, categoriaActual, 10, 0);
-                    const select = document.getElementById(selectId);
-                    select.innerHTML = '';
-                    data.items.forEach(item => {
-                        const opt = document.createElement('option');
-                        opt.value = item.sku;
-                        opt.innerText = `[${item.sku}] ${item.nombre} (Stock: ${item.stock_actual})`;
-                        select.appendChild(opt);
-                    });
-                    if (data.items.length > 0) select.selectedIndex = 0;
+                    const data = await buscar(term, categoriaActual, 15, 0);
+                    const sel = document.getElementById(selectId);
+                    sel.innerHTML = data.items.map(i => `<option value="${i.sku}">[${i.sku}] ${i.nombre} (Stock: ${i.stock_actual})</option>`).join('');
                 } catch(e) {}
             }, 250);
         }
 
         async function procesarMovimiento(tipo) {
             const prefix = tipo === 'ventas' ? 'v_' : 'e_';
-            const select = document.getElementById(prefix + 'sku');
-            const sku = select.value;
+            const sku = document.getElementById(prefix + 'sku').value;
             const cant = parseInt(document.getElementById(prefix + 'cant').value);
-            const resp = document.getElementById(prefix + 'usuario').value.trim();
+            const usr = document.getElementById(prefix + 'usuario').value.trim();
 
-            if (!sku) { mostrarToast('Selecciona un ítem de la lista', false); return; }
-            if (!cant || cant <= 0) { mostrarToast('Ingresa una cantidad válida', false); return; }
-            if (!resp) { mostrarToast('Ingresa el nombre del responsable', false); return; }
+            if (!sku) { mostrarToast('Por favor selecciona un ítem', false); return; }
+            if (!cant || cant < 1) { mostrarToast('La cantidad debe ser mayor a 0', false); return; }
+            if (!usr) { mostrarToast('Por favor escribe tu nombre en "Registrado por"', false); return; }
 
             try {
-                const res = await fetch('/movimientos/' + tipo, {
+                const res = await fetch(`/movimientos/${tipo}`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ sku: sku, cantidad: cant, registrado_por: resp })
+                    body: JSON.stringify({ sku: sku, cantidad: cant, registrado_por: usr })
                 });
-
                 const data = await res.json();
                 if (res.ok) {
-                    mostrarToast('✅ Registrado con éxito', true);
+                    mostrarToast(`✅ Registrado correctamente: ${data.item.nombre}`, true);
                     cargarKpis();
                     refrescarTabla();
-                    if (skuSeleccionadoParaFoto === sku) mostrarConsulta(data.item);
                 } else {
-                    mostrarToast(data.detail || 'Error al procesar', false);
+                    mostrarToast(`⚠️ Error: ${data.detail}`, false);
                 }
-            } catch(e) { mostrarToast('Error de servidor', false); }
+            } catch(e) {
+                mostrarToast('Error de red al procesar el movimiento', false);
+            }
         }
 
-        function cambiarPestana(cat) {
-            categoriaActual = cat;
-            document.getElementById('btn-tab-productos').classList.toggle('active', cat === 'productos');
-            document.getElementById('btn-tab-equipamiento').classList.toggle('active', cat === 'equipamiento');
-            document.getElementById('tabla-titulo').innerText = cat === 'productos' ? '📋 Listado de Productos' : '🪑 Listado de Equipamiento';
-            
-            document.getElementById('v_search').value = '';
-            document.getElementById('e_search').value = '';
-            document.getElementById('v_sku').innerHTML = '';
-            document.getElementById('e_sku').innerHTML = '';
+        async function cargarTabla(acumular = false) {
+            if (!acumular) paginaTabla = 0;
+            const query = document.getElementById('search').value;
+            const offset = paginaTabla * PAGE_SIZE;
 
-            cargarKpis();
-            refrescarTabla();
+            try {
+                const data = await buscar(query, categoriaActual, PAGE_SIZE, offset);
+                const tbody = document.getElementById('tabla-body');
+
+                if (!acumular && data.items.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="6" class="empty-hint">No se encontraron ítems.</td></tr>';
+                    document.getElementById('btn-cargar-mas').style.display = 'none';
+                    return;
+                }
+
+                const rowsHtml = data.items.map(item => {
+                    let badgeClass = 'badge-success';
+                    let badgeText = 'Disponible';
+                    if (item.stock_actual <= 0) { badgeClass = 'badge-danger'; badgeText = 'Agotado'; }
+                    else if (item.stock_actual <= 2) { badgeClass = 'badge-warning'; badgeText = 'Bajo Stock'; }
+
+                    const img = item.foto_url 
+                        ? `<img src="${item.foto_url}" class="row-thumb">` 
+                        : '<div class="row-thumb" style="display:flex;align-items:center;justify-content:center;font-size:1.2rem;">🖼️</div>';
+
+                    return `<tr>
+                        <td>${img}</td>
+                        <td><strong>${item.sku}</strong></td>
+                        <td>${item.nombre}</td>
+                        <td><span class="badge ${badgeClass}">${badgeText}</span></td>
+                        <td><strong>${item.stock_actual}</strong></td>
+                        <td><button class="row-action-btn" onclick="seleccionarResultado('${item.sku}')">Ver</button></td>
+                    </tr>`;
+                }).join('');
+
+                if (acumular) tbody.innerHTML += rowsHtml;
+                else tbody.innerHTML = rowsHtml;
+
+                const masDisponibles = (offset + data.items.length) < data.total;
+                document.getElementById('btn-cargar-mas').style.display = masDisponibles ? 'block' : 'none';
+            } catch(e) {
+                document.getElementById('tabla-body').innerHTML = '<tr><td colspan="6" class="empty-hint">Error al cargar datos.</td></tr>';
+            }
         }
 
         function onTablaSearch() {
-            debounce(() => refrescarTabla(), 300);
-        }
-
-        function refrescarTabla() {
-            paginaTabla = 0;
-            renderizarTabla(true);
+            debounce(() => cargarTabla(false), 300);
         }
 
         function cargarMasTabla() {
             paginaTabla++;
-            renderizarTabla(false);
+            cargarTabla(true);
         }
 
-        async function renderizarTabla(limpiar) {
-            const query = document.getElementById('search').value;
-            const tbody = document.getElementById('tabla-body');
-            const btnMas = document.getElementById('btn-cargar-mas');
-
-            try {
-                const data = await buscar(query, categoriaActual, PAGE_SIZE, paginaTabla * PAGE_SIZE);
-                if (limpiar) tbody.innerHTML = '';
-
-                if (data.items.length === 0 && limpiar) {
-                    tbody.innerHTML = '<tr><td colspan="6" class="empty-hint">No se encontraron resultados.</td></tr>';
-                    btnMas.style.display = 'none';
-                    return;
-                }
-
-                data.items.forEach(item => {
-                    let badgeClass = 'badge-success';
-                    let estadoTexto = 'Disponible';
-                    if (item.stock_actual <= 0) { badgeClass = 'badge-danger'; estadoTexto = 'Agotado'; }
-                    else if (item.stock_actual <= 2) { badgeClass = 'badge-warning'; estadoTexto = 'Bajo Stock'; }
-
-                    const thumb = item.foto_url ? `<img class="row-thumb" src="${item.foto_url}">` : '<div class="row-thumb" style="display:flex;align-items:center;justify-content:center;font-size:1.2rem;">🖼️</div>';
-
-                    const row = document.createElement('tr');
-                    row.innerHTML = `
-                        <td>${thumb}</td>
-                        <td><b>${item.sku}</b></td>
-                        <td>${item.nombre}</td>
-                        <td><span class="badge ${badgeClass}">${estadoTexto}</span></td>
-                        <td><b>${item.stock_actual}</b></td>
-                        <td><button class="row-action-btn" onclick='seleccionarDatoConsulta(${JSON.stringify(item.sku)})'>Ver / Editar</button></td>
-                    `;
-                    tbody.appendChild(row);
-                });
-
-                btnMas.style.display = (data.total > (paginaTabla + 1) * PAGE_SIZE) ? 'block' : 'none';
-
-            } catch(e) { mostrarToast('Error cargando la lista', false); }
+        function refrescarTabla() {
+            cargarTabla(false);
         }
 
         async function recargarDesdeExcel() {
@@ -885,4 +916,4 @@ def interfaz_usuario():
 
 
 if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
