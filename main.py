@@ -19,12 +19,9 @@ os.makedirs(FOTOS_DIR, exist_ok=True)
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
 # Diccionarios globales para mantener el registro de movimientos en memoria
-# (mientras el servidor está corriendo; se reinician si el servidor se reinicia)
 historial_entradas = {}  # {sku: cantidad}
 historial_ventas = {}    # {sku: cantidad}
 
-# Palabras clave para detectar la hoja de catálogo/mercancía en el Excel.
-# "marcancia"/"mercancia" cubre el nombre real de tu hoja (con o sin la "e").
 PALABRAS_CATALOGO = ["catálogo", "catalogo", "productos", "marcancia", "mercancia", "ropa"]
 PALABRAS_ACTIVOS = ["activos", "equipamiento", "activos fijos"]
 
@@ -45,11 +42,10 @@ def cargar_inventario_desde_excel():
         try:
             excel_file = pd.ExcelFile(EXCEL_PATH)
 
-            # 1. Leer Catálogo / Mercancía (Encabezados en la Fila 1)
+            # 1. Leer Catálogo / Mercancía
             for sheet in excel_file.sheet_names:
                 if any(kw in sheet.lower() for kw in PALABRAS_CATALOGO):
                     df_cat = pd.read_excel(EXCEL_PATH, sheet_name=sheet, header=0)
-
                     col_map = {str(c).strip().lower(): c for c in df_cat.columns}
 
                     col_sku = next((col_map[k] for k in col_map if 'sku' in k or 'código' in k or 'codigo' in k), df_cat.columns[0])
@@ -59,9 +55,6 @@ def cargar_inventario_desde_excel():
                     col_stock = next((col_map[k] for k in col_map if 'stock inicial' in k or 'inicial' in k or 'cantidad' in k or 'stock' in k), None)
                     col_precio_venta = next((col_map[k] for k in col_map if 'precio venta' in k or 'venta' in k), None)
 
-                    # Cuenta cuántas veces se repite cada código de prenda, para no
-                    # pisar entradas distintas que comparten el mismo código base
-                    # (ej. dos prendas distintas con código "TM").
                     conteo_codigos = {}
 
                     for _, row in df_cat.iterrows():
@@ -93,8 +86,6 @@ def cargar_inventario_desde_excel():
                         except (ValueError, TypeError):
                             precio_venta = 0
 
-                        # Si el código ya existe (otra prenda distinta con el mismo código
-                        # base), se genera una clave única en vez de sobreescribir el stock.
                         conteo_codigos[codigo] = conteo_codigos.get(codigo, 0) + 1
                         sku_final = codigo if conteo_codigos[codigo] == 1 else f"{codigo}-{conteo_codigos[codigo]}"
 
@@ -108,7 +99,7 @@ def cargar_inventario_desde_excel():
                             "ventas": historial_ventas.get(sku_final, 0),
                         }
 
-            # 2. Leer Activos Fijos / Equipamiento (Encabezados en la Fila 1)
+            # 2. Leer Activos Fijos / Equipamiento
             for sheet in excel_file.sheet_names:
                 if any(kw in sheet.lower() for kw in PALABRAS_ACTIVOS):
                     df_act = pd.read_excel(EXCEL_PATH, sheet_name=sheet, header=0)
@@ -124,10 +115,7 @@ def cargar_inventario_desde_excel():
                             nombre_activo = str(row[col_nombre]).strip() if col_nombre and pd.notna(row[col_nombre]) else sku
 
                             try:
-                                if col_cant and pd.notna(row[col_cant]):
-                                    stock_ini = int(float(row[col_cant]))
-                                else:
-                                    stock_ini = 1
+                                stock_ini = int(float(row[col_cant])) if col_cant and pd.notna(row[col_cant]) else 1
                             except (ValueError, TypeError):
                                 stock_ini = 1
 
@@ -163,7 +151,49 @@ def cargar_inventario_desde_excel():
     return inventario
 
 
-# Carga inicial de datos (solo el diccionario en memoria; el navegador NO lo recibe completo de arranque)
+def guardar_inventario_en_excel():
+    """Actualiza el archivo Excel persistente manteniendo hojas existentes."""
+    if not os.path.exists(EXCEL_PATH):
+        return
+
+    try:
+        excel_file = pd.ExcelFile(EXCEL_PATH)
+        df_dict = {}
+
+        for sheet in excel_file.sheet_names:
+            df = pd.read_excel(EXCEL_PATH, sheet_name=sheet)
+            col_map = {str(c).strip().lower(): c for c in df.columns}
+
+            # Actualizar hoja de productos
+            if any(kw in sheet.lower() for kw in PALABRAS_CATALOGO):
+                col_sku = next((col_map[k] for k in col_map if 'sku' in k or 'código' in k or 'codigo' in k), None)
+                col_entradas = next((col_map[k] for k in col_map if 'entrada' in k), None)
+                col_ventas = next((col_map[k] for k in col_map if 'venta' in k or 'salida' in k), None)
+
+                if col_sku:
+                    if not col_entradas:
+                        df['Entradas'] = 0
+                        col_entradas = 'Entradas'
+                    if not col_ventas:
+                        df['Ventas'] = 0
+                        col_ventas = 'Ventas'
+
+                    for idx, row in df.iterrows():
+                        sku = str(row[col_sku]).strip() if pd.notna(row[col_sku]) else ""
+                        if sku in inventario_db:
+                            df.at[idx, col_entradas] = inventario_db[sku]["entradas"]
+                            df.at[idx, col_ventas] = inventario_db[sku]["ventas"]
+
+            df_dict[sheet] = df
+
+        with pd.ExcelWriter(EXCEL_PATH, engine='openpyxl') as writer:
+            for sheet_name, df_data in df_dict.items():
+                df_data.to_excel(writer, sheet_name=sheet_name, index=False)
+    except Exception as e:
+        print(f"⚠️ Error al guardar cambios en Excel: {e}")
+
+
+# Carga inicial de datos
 inventario_db = cargar_inventario_desde_excel()
 
 
@@ -183,6 +213,91 @@ def _item_publico(sku: str, item: dict) -> dict:
         "precio_venta": item.get("precio_venta", 0),
         "foto_url": _foto_url(sku),
     }
+
+
+# ==================== ENDPOINTS API ====================
+
+@app.get("/buscar")
+def buscar_items(q: str = "", categoria: str = "", limit: int = 25, offset: int = 0):
+    query = q.lower().strip()
+    resultados = []
+    
+    for sku, item in inventario_db.items():
+        if categoria and item.get("categoria") != categoria:
+            continue
+        
+        texto_busqueda = f"{sku} {item['nombre']}".lower()
+        if not query or query in texto_busqueda:
+            resultados.append(_item_publico(sku, item))
+            
+    total = len(resultados)
+    paginados = resultados[offset:offset + limit]
+    return {"total": total, "items": paginados}
+
+
+@app.get("/kpis")
+def obtener_kpis(categoria: str = "productos"):
+    total_skus = 0
+    total_stock = 0
+    sin_stock = 0
+    
+    for sku, item in inventario_db.items():
+        if item.get("categoria") == categoria:
+            stock = item["stock_inicial"] + item["entradas"] - item["ventas"]
+            total_skus += 1
+            total_stock += max(0, stock)
+            if stock <= 0:
+                sin_stock += 1
+                
+    return {"total_skus": total_skus, "total_stock": total_stock, "sin_stock": sin_stock}
+
+
+@app.post("/movimientos/{tipo}")
+def registrar_movimiento(tipo: str, mov: Movimiento):
+    if mov.sku not in inventario_db:
+        raise HTTPException(status_code=404, detail="El SKU no existe")
+    
+    if tipo == "ventas":
+        inventario_db[mov.sku]["ventas"] += mov.cantidad
+        historial_ventas[mov.sku] = inventario_db[mov.sku]["ventas"]
+    elif tipo == "entradas":
+        inventario_db[mov.sku]["entradas"] += mov.cantidad
+        historial_entradas[mov.sku] = inventario_db[mov.sku]["entradas"]
+    else:
+        raise HTTPException(status_code=400, detail="Tipo de movimiento inválido")
+    
+    guardar_inventario_en_excel()
+    return {"mensaje": "Movimiento registrado", "item": _item_publico(mov.sku, inventario_db[mov.sku])}
+
+
+@app.post("/fotos/{sku}")
+async def subir_foto(sku: str, archivo: UploadFile = File(...)):
+    if sku not in inventario_db:
+        raise HTTPException(status_code=404, detail="SKU no encontrado")
+    
+    ext = archivo.filename.split(".")[-1].lower()
+    if ext not in ["jpg", "jpeg", "png", "webp"]:
+        raise HTTPException(status_code=400, detail="Formato de imagen no soportado")
+    
+    ruta_destino = os.path.join(FOTOS_DIR, f"{sku}.{ext}")
+    with open(ruta_destino, "wb") as buffer:
+        shutil.copyfileobj(archivo.file, buffer)
+        
+    return {"mensaje": "Foto subida con éxito", "foto_url": f"/{ruta_destino}"}
+
+
+@app.get("/descargar-excel")
+def descargar_excel():
+    if not os.path.exists(EXCEL_PATH):
+        raise HTTPException(status_code=404, detail="El archivo Excel no existe")
+    return FileResponse(EXCEL_PATH, filename="Inventario_Pole_Dance_Actualizado.xlsx")
+
+
+@app.get("/sincronizar")
+def sincronizar_excel():
+    global inventario_db
+    inventario_db = cargar_inventario_desde_excel()
+    return {"mensaje": "Inventario re-sincronizado desde el Excel exitosamente"}
 
 
 @app.get("/", response_class=HTMLResponse, tags=["Interfaz"])
@@ -509,7 +624,6 @@ def interfaz_usuario():
     <div id="toast"></div>
 
     <script>
-        // ---- Estado ligero: aquí NO se guarda el catálogo completo, solo lo que se ha pedido ----
         let categoriaActual = 'productos';
         let skuSeleccionadoParaFoto = null;
         let paginaTabla = 0;
@@ -536,7 +650,7 @@ def interfaz_usuario():
                 document.getElementById('kpi-total-skus').innerText = data.total_skus;
                 document.getElementById('kpi-total-stock').innerText = data.total_stock;
                 document.getElementById('kpi-sin-stock').innerText = data.sin_stock;
-            } catch(e) { /* silencioso: los KPIs no son críticos */ }
+            } catch(e) {}
         }
 
         async function buscar(query, categoria, limit, offset) {
@@ -546,7 +660,6 @@ def interfaz_usuario():
             return await res.json();
         }
 
-        // ---- Autocomplete de consulta rápida ----
         function onLookupInput(valor) {
             const term = valor.trim();
             const listDiv = document.getElementById('autocomplete-list');
@@ -627,260 +740,149 @@ def interfaz_usuario():
                     mostrarToast('📷 Foto guardada', true);
                     document.getElementById('status-foto').src = data.foto_url + '?t=' + Date.now();
                     document.getElementById('status-foto').style.display = 'block';
+                    refrescarTabla();
                 } else {
-                    mostrarToast(data.detail || 'No se pudo subir la foto', false);
+                    mostrarToast(data.detail || 'Error al subir foto', false);
                 }
-            } catch(e) { mostrarToast("Error de conexión con el servidor", false); }
+            } catch(e) { mostrarToast('Error de conexión', false); }
         }
 
-        // ---- Selects de venta/entrada: se llenan solo al escribir (no de arranque) ----
-        async function buscarParaSelect(selectId, query) {
-            const select = document.getElementById(selectId);
-            if (!query || query.trim().length < 1) { select.innerHTML = ''; return; }
+        function buscarParaSelect(selectId, query) {
+            if (query.trim().length < 2) return;
             debounce(async () => {
                 try {
-                    const data = await buscar(query, categoriaActual, 15, 0);
+                    const data = await buscar(query, categoriaActual, 10, 0);
+                    const select = document.getElementById(selectId);
                     select.innerHTML = '';
                     data.items.forEach(item => {
                         const opt = document.createElement('option');
                         opt.value = item.sku;
-                        opt.innerText = `${item.sku} - ${item.nombre} (${item.stock_actual} ud.)`;
+                        opt.innerText = `[${item.sku}] ${item.nombre} (Stock: ${item.stock_actual})`;
                         select.appendChild(opt);
                     });
-                    if (select.options.length > 0) select.selectedIndex = 0;
-                } catch(e) { mostrarToast("Error de conexión con el servidor", false); }
+                    if (data.items.length > 0) select.selectedIndex = 0;
+                } catch(e) {}
             }, 250);
+        }
+
+        async function procesarMovimiento(tipo) {
+            const prefix = tipo === 'ventas' ? 'v_' : 'e_';
+            const select = document.getElementById(prefix + 'sku');
+            const sku = select.value;
+            const cant = parseInt(document.getElementById(prefix + 'cant').value);
+            const resp = document.getElementById(prefix + 'usuario').value.trim();
+
+            if (!sku) { mostrarToast('Selecciona un ítem de la lista', false); return; }
+            if (!cant || cant <= 0) { mostrarToast('Ingresa una cantidad válida', false); return; }
+            if (!resp) { mostrarToast('Ingresa el nombre del responsable', false); return; }
+
+            try {
+                const res = await fetch('/movimientos/' + tipo, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ sku: sku, cantidad: cant, registrado_por: resp })
+                });
+
+                const data = await res.json();
+                if (res.ok) {
+                    mostrarToast('✅ Registrado con éxito', true);
+                    cargarKpis();
+                    refrescarTabla();
+                    if (skuSeleccionadoParaFoto === sku) mostrarConsulta(data.item);
+                } else {
+                    mostrarToast(data.detail || 'Error al procesar', false);
+                }
+            } catch(e) { mostrarToast('Error de servidor', false); }
         }
 
         function cambiarPestana(cat) {
             categoriaActual = cat;
             document.getElementById('btn-tab-productos').classList.toggle('active', cat === 'productos');
             document.getElementById('btn-tab-equipamiento').classList.toggle('active', cat === 'equipamiento');
-
-            if (cat === 'productos') {
-                document.getElementById('tabla-titulo').innerText = '📋 Catálogo de Prendas y Productos';
-                document.getElementById('form-salida-title').innerText = '🛍️ Registrar Venta';
-                document.getElementById('btn-salida-action').innerText = 'Descontar Venta';
-            } else {
-                document.getElementById('tabla-titulo').innerText = '🪑 Equipamiento y Activos Fijos';
-                document.getElementById('form-salida-title').innerText = '⚠️ Registrar Salida / Baja';
-                document.getElementById('btn-salida-action').innerText = 'Descontar Equipamiento';
-            }
+            document.getElementById('tabla-titulo').innerText = cat === 'productos' ? '📋 Listado de Productos' : '🪑 Listado de Equipamiento';
+            
             document.getElementById('v_search').value = '';
             document.getElementById('e_search').value = '';
             document.getElementById('v_sku').innerHTML = '';
             document.getElementById('e_sku').innerHTML = '';
 
             cargarKpis();
-            reiniciarTabla();
+            refrescarTabla();
         }
 
-        // ---- Tabla principal: paginada, no carga todo de una vez ----
-        function onTablaSearch() { reiniciarTabla(); }
+        function onTablaSearch() {
+            debounce(() => refrescarTabla(), 300);
+        }
 
-        function reiniciarTabla() {
+        function refrescarTabla() {
             paginaTabla = 0;
-            document.getElementById('tabla-body').innerHTML = '';
-            cargarPaginaTabla();
+            renderizarTabla(true);
         }
 
-        function filaHtml(item) {
-            let badgeClass = 'badge-success', estadoTexto = 'Disponible';
-            if (item.stock_actual <= 0) { badgeClass = 'badge-danger'; estadoTexto = 'Agotado'; }
-            else if (item.stock_actual <= 2) { badgeClass = 'badge-warning'; estadoTexto = 'Stock Bajo'; }
-            const thumb = item.foto_url ? `<img class="row-thumb" src="${item.foto_url}">` : `<div class="row-thumb"></div>`;
-            return `<tr>
+        function cargarMasTabla() {
+            paginaTabla++;
+            renderizarTabla(false);
+        }
+
+        async function renderizarTabla(limpiar) {
+            const query = document.getElementById('search').value;
+            const tbody = document.getElementById('tabla-body');
+            const btnMas = document.getElementById('btn-cargar-mas');
+
+            try {
+                const data = await buscar(query, categoriaActual, PAGE_SIZE, paginaTabla * PAGE_SIZE);
+                if (limpiar) tbody.innerHTML = '';
+
+                if (data.items.length === 0 && limpiar) {
+                    tbody.innerHTML = '<tr><td colspan="6" class="empty-hint">No se encontraron resultados.</td></tr>';
+                    btnMas.style.display = 'none';
+                    return;
+                }
+
+                data.items.forEach(item => {
+                    let badgeClass = 'badge-success';
+                    let estadoTexto = 'Disponible';
+                    if (item.stock_actual <= 0) { badgeClass = 'badge-danger'; estadoTexto = 'Agotado'; }
+                    else if (item.stock_actual <= 2) { badgeClass = 'badge-warning'; estadoTexto = 'Bajo Stock'; }
+
+                    const thumb = item.foto_url ? `<img class="row-thumb" src="${item.foto_url}">` : '<div class="row-thumb" style="display:flex;align-items:center;justify-content:center;font-size:1.2rem;">🖼️</div>';
+
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
                         <td>${thumb}</td>
                         <td><b>${item.sku}</b></td>
                         <td>${item.nombre}</td>
                         <td><span class="badge ${badgeClass}">${estadoTexto}</span></td>
-                        <td><b>${item.stock_actual} ud.</b></td>
-                        <td><button class="row-action-btn" onclick='seleccionarDatoConsulta(${JSON.stringify(item.sku)})'>⚡ Elegir</button></td>
-                    </tr>`;
-        }
-
-        async function cargarPaginaTabla() {
-            const query = document.getElementById('search').value;
-            const tbody = document.getElementById('tabla-body');
-            try {
-                const data = await buscar(query, categoriaActual, PAGE_SIZE, paginaTabla * PAGE_SIZE);
-                if (paginaTabla === 0) tbody.innerHTML = '';
-                if (data.items.length === 0 && paginaTabla === 0) {
-                    tbody.innerHTML = '<tr><td colspan="6" class="empty-hint">Sin resultados para esa búsqueda.</td></tr>';
-                } else {
-                    tbody.innerHTML += data.items.map(filaHtml).join('');
-                }
-                document.getElementById('btn-cargar-mas').style.display = data.hay_mas ? 'block' : 'none';
-            } catch(e) { mostrarToast("Error de conexión con el servidor", false); }
-        }
-
-        function cargarMasTabla() { paginaTabla++; cargarPaginaTabla(); }
-
-        async function procesarMovimiento(tipo) {
-            const prefix = tipo === 'ventas' ? 'v_' : 'e_';
-            const sku = document.getElementById(prefix + 'sku').value;
-            const cantidad = parseInt(document.getElementById(prefix + 'cant').value);
-            const registrado_por = document.getElementById(prefix + 'usuario').value;
-
-            if (!sku) { mostrarToast("Por favor selecciona un producto de la lista", false); return; }
-            if (!registrado_por.trim()) { mostrarToast("Por favor ingresa tu nombre", false); return; }
-
-            try {
-                const res = await fetch('/' + tipo, {
-                    method: 'POST', headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ sku, cantidad, registrado_por })
+                        <td><b>${item.stock_actual}</b></td>
+                        <td><button class="row-action-btn" onclick='seleccionarDatoConsulta(${JSON.stringify(item.sku)})'>Ver / Editar</button></td>
+                    `;
+                    tbody.appendChild(row);
                 });
-                const data = await res.json();
-                if (res.ok) {
-                    mostrarToast(data.mensaje, true);
-                    reiniciarTabla();
-                    cargarKpis();
-                } else {
-                    mostrarToast(data.detail || "Error al registrar movimiento", false);
-                }
-            } catch(e) { mostrarToast("Error de conexión con el servidor", false); }
+
+                btnMas.style.display = (data.total > (paginaTabla + 1) * PAGE_SIZE) ? 'block' : 'none';
+
+            } catch(e) { mostrarToast('Error cargando la lista', false); }
         }
 
         async function recargarDesdeExcel() {
             try {
-                const res = await fetch('/recargar', { method: 'POST' });
-                const data = await res.json();
+                const res = await fetch('/sincronizar');
                 if (res.ok) {
-                    mostrarToast(data.mensaje, true);
-                    reiniciarTabla();
+                    mostrarToast('🔄 Excel sincronizado con éxito', true);
                     cargarKpis();
-                } else { mostrarToast("Error al recargar el archivo Excel", false); }
-            } catch(e) { mostrarToast("Error de conexión con el servidor", false); }
+                    refrescarTabla();
+                }
+            } catch(e) { mostrarToast('Error al re-sincronizar', false); }
         }
 
-        document.addEventListener('click', function(e) {
-            if (!e.target.closest('.search-box-wrapper')) {
-                document.getElementById('autocomplete-list').style.display = 'none';
-            }
-        });
-
-        // Arranque liviano: solo KPIs (3 números) + primera página de la tabla, nada más.
-        cargarKpis();
-        cargarPaginaTabla();
+        window.onload = () => {
+            cargarKpis();
+            refrescarTabla();
+        };
     </script>
 </body>
 </html>'''
 
 
-@app.get("/buscar", tags=["API"])
-def buscar(q: str = "", categoria: str = "", limit: int = 25, offset: int = 0):
-    """Busca ítems por texto (código o nombre) con paginación, para no mandar todo el catálogo de una vez."""
-    termino = q.strip().lower()
-    resultados = []
-    for sku, item in inventario_db.items():
-        if categoria and item.get("categoria", "productos") != categoria:
-            continue
-        if termino and termino not in sku.lower() and termino not in item["nombre"].lower():
-            continue
-        resultados.append((sku, item))
-
-    resultados.sort(key=lambda x: x[0])
-    total = len(resultados)
-    pagina = resultados[offset: offset + limit]
-    return {
-        "items": [_item_publico(sku, item) for sku, item in pagina],
-        "total": total,
-        "hay_mas": offset + limit < total,
-    }
-
-
-@app.get("/kpis", tags=["API"])
-def kpis(categoria: str = ""):
-    """Devuelve solo 3 números agregados, sin transferir el catálogo completo al navegador."""
-    total_skus = 0
-    total_stock = 0
-    sin_stock = 0
-    for sku, item in inventario_db.items():
-        if categoria and item.get("categoria", "productos") != categoria:
-            continue
-        total_skus += 1
-        stock_actual = item["stock_inicial"] + item["entradas"] - item["ventas"]
-        total_stock += stock_actual
-        if stock_actual <= 0:
-            sin_stock += 1
-    return {"total_skus": total_skus, "total_stock": total_stock, "sin_stock": sin_stock}
-
-
-@app.post("/recargar", tags=["API"])
-def recargar_excel():
-    global inventario_db
-    inventario_db = cargar_inventario_desde_excel()
-    return {"mensaje": "✅ Datos sincronizados con el archivo Excel exitosamente."}
-
-
-@app.get("/descargar-excel", tags=["API"])
-def descargar_excel():
-    if os.path.exists(EXCEL_PATH):
-        return FileResponse(
-            path=EXCEL_PATH,
-            filename="Control_Inventario_Pole_Dance.xlsx",
-            media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-        )
-    else:
-        raise HTTPException(status_code=404, detail="El archivo Excel no se encuentra en el servidor.")
-
-
-@app.post("/fotos/{sku}", tags=["API"])
-def subir_foto(sku: str, archivo: UploadFile = File(...)):
-    if sku not in inventario_db:
-        raise HTTPException(status_code=404, detail="El SKU no existe.")
-
-    ext = (archivo.filename or "").split(".")[-1].lower()
-    if ext not in ("jpg", "jpeg", "png", "webp"):
-        raise HTTPException(status_code=400, detail="Formato de imagen no soportado. Usa JPG, PNG o WEBP.")
-
-    # borra fotos anteriores del mismo sku con otra extensión, para no acumular archivos huérfanos
-    for otra_ext in ("jpg", "jpeg", "png", "webp"):
-        ruta_vieja = os.path.join(FOTOS_DIR, f"{sku}.{otra_ext}")
-        if os.path.exists(ruta_vieja):
-            os.remove(ruta_vieja)
-
-    destino = os.path.join(FOTOS_DIR, f"{sku}.{ext}")
-    with open(destino, "wb") as f:
-        shutil.copyfileobj(archivo.file, f)
-
-    return {"mensaje": "Foto guardada", "foto_url": f"/{destino}"}
-
-
-@app.post("/entradas", tags=["API"])
-def registrar_entrada(mov: Movimiento):
-    if mov.sku not in inventario_db:
-        raise HTTPException(status_code=404, detail="El SKU no existe.")
-
-    inventario_db[mov.sku]["entradas"] += mov.cantidad
-    historial_entradas[mov.sku] = inventario_db[mov.sku]["entradas"]
-
-    stock = inventario_db[mov.sku]["stock_inicial"] + inventario_db[mov.sku]["entradas"] - inventario_db[mov.sku]["ventas"]
-    return {
-        "mensaje": f"✅ Ingresadas {mov.cantidad} ud. a {inventario_db[mov.sku]['nombre']}",
-        "stock_actual": stock
-    }
-
-
-@app.post("/ventas", tags=["API"])
-def registrar_venta(mov: Movimiento):
-    if mov.sku not in inventario_db:
-        raise HTTPException(status_code=404, detail="El SKU no existe.")
-
-    stock_actual = inventario_db[mov.sku]["stock_inicial"] + inventario_db[mov.sku]["entradas"] - inventario_db[mov.sku]["ventas"]
-
-    if mov.cantidad > stock_actual:
-        raise HTTPException(status_code=400, detail=f"Stock insuficiente. Disponible: {stock_actual} ud.")
-
-    inventario_db[mov.sku]["ventas"] += mov.cantidad
-    historial_ventas[mov.sku] = inventario_db[mov.sku]["ventas"]
-
-    nuevo_stock = stock_actual - mov.cantidad
-    return {
-        "mensaje": f"🛒 Registrada salida de {mov.cantidad} ud. de {inventario_db[mov.sku]['nombre']}",
-        "stock_actual": nuevo_stock
-    }
-
-
 if __name__ == "__main__":
-    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
+    uvicorn.run(app, host="0.0.0.0", port=8000)
