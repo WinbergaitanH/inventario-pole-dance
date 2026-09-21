@@ -588,7 +588,8 @@ def interfaz_usuario():
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Pole Sport">
     <meta name="theme-color" content="#0f0c20">
-    <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/3081/3081559.png">
+    <link rel="apple-touch-icon" href="/static/logo.png">
+    <link rel="icon" type="image/png" href="/static/logo.png">
 
     <title>Pole Dance Rojas Sport</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -648,6 +649,14 @@ def interfaz_usuario():
             letter-spacing: -0.5px;
             text-transform: uppercase;
             margin-bottom: 6px;
+        }
+
+        .brand-image {
+            max-height: 110px;
+            width: auto;
+            display: block;
+            margin: 0 auto 10px;
+            filter: drop-shadow(0 4px 12px rgba(0,0,0,0.35));
         }
 
         .brand-subtitle {
@@ -849,7 +858,7 @@ def interfaz_usuario():
 <body>
     <div class="container">
         <header>
-            <div class="brand-logo">✨ Pole Dance Rojas Sport</div>
+            <img src="/static/logo.png" alt="Rojas Sport" class="brand-image" onerror="this.style.display='none';">
             <div class="brand-subtitle">INVENTARIO · CLASES & PAQUETES · FINANZAS</div>
             <div class="header-buttons">
                 <a href="/descargar-excel" class="btn-top">📥 Descargar Excel</a>
