@@ -368,7 +368,7 @@ def manifest():
 @app.get("/sw.js")
 def sw():
     # Guarda la última versión de la app y de los datos: si no hay internet, abre con lo último que vio.
-    js = """const C='rojas-v13';
+    js = """const C='rojas-v14';
 self.addEventListener('install',e=>self.skipWaiting());
 self.addEventListener('activate',e=>e.waitUntil(caches.keys().then(k=>Promise.all(k.filter(x=>x!==C).map(x=>caches.delete(x))))));
 self.addEventListener('fetch',e=>{const u=new URL(e.request.url);
@@ -442,7 +442,7 @@ th{position:sticky;top:0;background:#f8fafc;font-size:.7rem;text-transform:upper
 td{padding:8px 12px;border-bottom:1px solid #f1f5f9;font-size:.85rem;white-space:nowrap}
 tr:hover td{background:#f0fdf4}
 .chip{padding:3px 10px;border-radius:20px;font-size:.72rem;font-weight:700;background:#dcfce7;color:#166534}
-.chip.r{background:#fee2e2;color:#991b1b}
+.chip.r{background:#fee2e2;color:#991b1b}.chip.a{background:#fef3c7;color:#92400e}
 .neg{color:var(--bad);font-weight:700}.pos{color:var(--ok);font-weight:700}
 .mu{color:var(--mu);font-size:.8rem;margin:8px 2px}.more{width:100%;margin-top:10px;padding:10px;border:1.5px dashed #cbd5e1;border-radius:10px;background:#f8fafc;cursor:pointer;font-weight:700;color:var(--mu)}
 .av{width:44px;height:44px;border-radius:10px;object-fit:cover;cursor:zoom-in;background:#f1f5f9}
@@ -463,18 +463,18 @@ tr:hover td{background:#f0fdf4}
 if('serviceWorker'in navigator)navigator.serviceWorker.register('/sw.js');
 const T={resumen:{n:'📊 Resumen'},alumnas:{n:'🎓 Alumnas',kw:'alumnas',req:'Nombre',fc:'Estado',foto:'ID Alumna'},
 ingresos:{n:'🤸 Ingresos',kw:'ingresos',req:'Alumna',fc:'Tipo'},gastos:{n:'💸 Gastos',kw:'gastos',req:'Valor ($)',fc:'Categoría'},
-stock:{n:'👗 Stock'},merc:{n:'📦 Entradas',kw:'marcancia',req:'Código Prenda',fc:'Clasificación',foto:'ID Entrada'},
+stock:{n:'👗 Catálogo',kw:'catálogo',req:'Código',fc:'Estado',foto:'Código',orden:['Código','Descripción','Talla','Color','Stock','Estado','Precio venta ($)']},merc:{n:'📦 Entradas',kw:'marcancia',req:'Código Prenda',fc:'Clasificación',foto:'ID Entrada'},
 activos:{n:'🏢 Activos',kw:'activos',req:'Nombre del Activo',fc:'Estado'},ventas:{n:'🛒 Ventas',kw:'ventas',req:'Código Prenda',fc:'Método Pago'},
 cont:{n:'📑 Contable',kw:'contable'}};
 // Columnas de apoyo del Excel que no se muestran en la app
-const OCULTAS=/^(Clave \(auto\)|Alumna \(lista, auto\)|Nombre \+ Apellidos \(auto\)|Orden lista \(auto\)|ID Alumna \(auto\))$/;
+const OCULTAS=/^(Prefijo \(auto\)|Clave modelo \(auto\)|Modelo nuevo \(auto\)|N° modelo \(auto\)|Clave \(auto\)|Alumna \(lista, auto\)|Nombre \+ Apellidos \(auto\)|Orden lista \(auto\)|ID Alumna \(auto\))$/;
 let D={},tab='resumen',S={},F=new Map();
 const $=s=>document.querySelector(s),esc=v=>String(v??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const fmt=n=>(n<0?'-$':'$')+Math.abs(Math.round(n||0)).toLocaleString('es-CO'),num=v=>Number(v)||0;
 const titulo=c=>c.replace(/ \(auto\)$/,'');
 function toast(t,ms=3500){const e=$('#toast');e.textContent=t;e.style.display='block';clearTimeout(e._t);e._t=setTimeout(()=>e.style.display='none',ms)}
 const hoja=kw=>{const k=Object.keys(D).find(n=>n.toLowerCase().includes(kw));return k?D[k]:null};
-function tabla(id){const t=T[id];if(id==='stock')return stock();const h=hoja(t.kw);if(!h)return{cols:[],rows:[]};
+function tabla(id){const t=T[id];const h=t.kw?hoja(t.kw):null;if(id==='stock'&&!h)return stock();if(!h)return{cols:[],rows:[]};
 // solo filas con ID en la 1.ª columna: así las filas de TOTAL dentro de las hojas no se cuentan dos veces
 const rows=h.filas.filter(f=>f[0]!=null&&f[0]!=='').map(f=>Object.fromEntries(h.cols.map((c,i)=>[c,f[i]]))).filter(r=>r[t.req]!=null&&r[t.req]!=='');
 return{cols:h.cols.filter(c=>!OCULTAS.test(c)&&c!=='nan'),rows}}
@@ -489,16 +489,20 @@ function barras(items,id,col,money){const mx=Math.max(...items.map(i=>i[1]),1);
 return items.slice(0,8).map(([k,v])=>`<div class="br" onclick="ir('${id}','${col}',this.dataset.k)" data-k="${esc(k)}"><span>${esc(k)}</span>
 <i style="width:${v/mx*45}%"></i><em>${money?fmt(v):v}</em></div>`).join('')||'<p class="mu">Sin datos</p>'}
 function ir(id,col,val){S[id]={q:'',f:val&&col?val:'',sc:null,asc:1,n:100};tab=id;pintar()}
-function resumen(){const al=tabla('alumnas').rows,ing=tabla('ingresos').rows,ga=tabla('gastos').rows,ac=tabla('activos').rows,st=tabla('stock').rows;
-const I=sum(ing,'Total ($)'),G=sum(ga,'Valor ($)'),nuevas=al.filter(a=>a.Estado==='Nueva').length,rec=al.filter(a=>a.Estado==='Recurrente').length;
+function resumen(){const al=tabla('alumnas').rows,ing=tabla('ingresos').rows,ga=tabla('gastos').rows,ac=tabla('activos').rows,st=tabla('stock').rows,ve=tabla('ventas').rows;
+const IC=sum(ing,'Total ($)'),IV=sum(ve,'Total Venta ($)'),I=IC+IV,G=sum(ga,'Valor ($)'),nuevas=al.filter(a=>a.Estado==='Nueva').length,rec=al.filter(a=>a.Estado==='Recurrente').length;
 const meses={};ing.forEach(r=>{const m=String(r.Fecha||'').slice(0,7);if(m)(meses[m]??={i:0,g:0}).i+=num(r['Total ($)'])});
 ga.forEach(r=>{const m=String(r.Fecha||'').slice(0,7);if(m)(meses[m]??={i:0,g:0}).g+=num(r['Valor ($)'])});
+ve.forEach(r=>{const m=String(r.Fecha||'').slice(0,7);if(m)(meses[m]??={i:0,g:0}).i+=num(r['Total Venta ($)'])});
+const agot=st.filter(x=>x.Estado==='Agotado').length,ult=st.filter(x=>x.Estado==='Última unidad').length;
+const masV={};ve.forEach(r=>{const k=(r['Código Prenda']||'')+' · '+String(r['Descripción']||'').trim();masV[k]=(masV[k]||0)+num(r['Cant. Vendida (-)'])});
 const ms=Object.keys(meses).sort(),mx=Math.max(...ms.map(m=>Math.max(meses[m].i,meses[m].g)),1);
 const sinAsignar=ing.filter(r=>!String(r['ID Alumna (auto)']||'').startsWith('A-')).length;
-const K=(t,v,id,c='')=>`<div class="card kpi" onclick="ir('${id}')"><h4>${t}</h4><b class="${c}">${v}</b></div>`;
+const K=(t,v,id,c='',sub='')=>`<div class="card kpi" onclick="ir('${id}')"><h4>${t}</h4><b class="${c}">${v}</b>${sub?`<small class="mu" style="display:block;margin:2px 0 0">${sub}</small>`:''}</div>`;
 const nom=a=>[a.Nombre,a.Apellidos].filter(Boolean).join(' ');
-return `<div class="g k">${K('Ingresos',fmt(I),'ingresos','pos')}${K('Gastos',fmt(G),'gastos','neg')}${K('Resultado',fmt(I-G),'cont',I-G>=0?'pos':'neg')}
-${K('Alumnas',al.length,'alumnas')}${K('Nuevas / Recurrentes',nuevas+' / '+rec,'alumnas')}${K('Prendas en stock',sum(st,'Stock'),'stock')}${K('Valor activos',fmt(sum(ac,'Valor Total ($)')),'activos')}</div>
+return `<div class="g k">${K('Ingresos',fmt(I),'ingresos','pos','clases '+fmt(IC)+' · ventas '+fmt(IV))}${K('Gastos',fmt(G),'gastos','neg')}${K('Resultado',fmt(I-G),'cont',I-G>=0?'pos':'neg')}
+${K('Alumnas',al.length,'alumnas')}${K('Nuevas / Recurrentes',nuevas+' / '+rec,'alumnas')}${K('Unidades en stock',sum(st,'Stock'),'stock','',st.length+' productos')}${K('Valor activos',fmt(sum(ac,'Valor Total ($)')),'activos')}</div>
+${agot||ult?`<div class="card" style="margin-bottom:14px;border-left:5px solid var(--bad);cursor:pointer" onclick="ir('stock','Estado','Agotado')">👗 Inventario: <b>${agot}</b> producto(s) agotado(s) y <b>${ult}</b> en su última unidad. Toca para verlos.</div>`:''}
 ${sinAsignar?`<div class="card" style="margin-bottom:14px;border-left:5px solid var(--warn)">⚠️ ${sinAsignar} ingreso(s) sin alumna reconocida. Revísalos en el Excel (celda roja en la columna Alumna).</div>`:''}
 <div class="g c2"><div class="card" style="grid-column:1/-1"><h3>📅 Ingresos vs Gastos por mes <small class="mu">(🟢 ingresos · 🔴 gastos)</small></h3><div class="mes">
 ${ms.map(m=>`<div><div class="bb"><i title="${fmt(meses[m].i)}" style="height:${meses[m].i/mx*100}%;background:var(--p)"></i><i title="${fmt(meses[m].g)}" style="height:${meses[m].g/mx*100}%;background:var(--bad)"></i></div>${m}</div>`).join('')}</div></div>
@@ -507,16 +511,18 @@ ${ms.map(m=>`<div><div class="bb"><i title="${fmt(meses[m].i)}" style="height:${
 <div class="card"><h3>💳 Ingresos por método de pago</h3>${barras(group(ing,'Método de Pago','Total ($)'),'ingresos','Método de Pago',1)}</div>
 <div class="card"><h3>🎓 Alumnas por estado</h3>${barras(group(al.map(a=>({...a,Estado:a.Estado||'Sin pagos'})),'Estado'),'alumnas','Estado')}</div>
 <div class="card"><h3>🏆 Alumnas que más han pagado</h3>${barras(al.map(a=>[nom(a),num(a['Total pagado ($)'])]).sort((a,b)=>b[1]-a[1]),'alumnas','',1)}</div>
+<div class="card"><h3>🛒 Productos más vendidos <small class="mu">(unidades)</small></h3>${barras(Object.entries(masV).sort((a,b)=>b[1]-a[1]),'ventas','',0)}</div>
+<div class="card"><h3>👗 Inventario por estado</h3>${barras(group(st,'Estado'),'stock','Estado')}</div>
 <div class="card"><h3>🏢 Activos por estado</h3>${barras(group(ac,'Estado','Valor Total ($)'),'activos','Estado',1)}</div></div>
 <p class="mu" style="color:#cbd5e1">Toca cualquier tarjeta o barra para ver el detalle filtrado.</p>`}
 function vista(id){const t=T[id],s=S[id]??={q:'',f:'',sc:null,asc:1,n:100};
 if(id==='cont')return contable();
-let {cols,rows}=tabla(id);if(t.foto)cols=['Foto',...cols];const fc=t.fc;
+let {cols,rows}=tabla(id);if(t.orden)cols=[...t.orden.filter(c=>cols.includes(c)),...cols.filter(c=>!t.orden.includes(c))];if(t.foto)cols=['Foto',...cols];const fc=t.fc;
 const opts=fc&&cols.includes(fc)?[...new Set(rows.map(r=>r[fc]).filter(v=>v!=null))].sort():[];
 let r=rows.filter(x=>(!s.f||String(x[fc])===s.f||(!fc||!cols.includes(fc))&&Object.values(x).includes(s.f))&&(!s.q||Object.values(x).join(' ').toLowerCase().includes(s.q.toLowerCase())));
 if(s.sc)r.sort((a,b)=>((a[s.sc]??'')>(b[s.sc]??'')?1:-1)*s.asc);
 const cell=(c,v,x)=>c==='Foto'?foto(x[t.foto]):v==null?'':typeof v==='number'&&/\(\$\)|precio|valor/i.test(c)?fmt(v)
- :/^(Varias|No encontrada)/.test(String(v))?`<span class="chip r">${esc(v)}</span>`:c==='Estado'||c===fc?`<span class="chip">${esc(v)}</span>`:esc(v);
+ :/^(Varias|No encontrada)/.test(String(v))?`<span class="chip r">${esc(v)}</span>`:c==='Estado'||c===fc?`<span class="chip${/Agotado/.test(v)?' r':/Última/.test(v)?' a':''}">${esc(v)}</span>`:esc(v);
 return `<div class="card"><div class="tb"><input placeholder="🔍 Buscar en ${t.n}…" value="${esc(s.q)}" oninput="S['${id}'].q=this.value;S['${id}'].n=100;repintar('${id}')" id="q">
 ${opts.length?`<select onchange="S['${id}'].f=this.value;pintar()"><option value="">Todos (${fc})</option>${opts.map(o=>`<option ${o===s.f?'selected':''}>${esc(o)}</option>`).join('')}</select>`:''}</div>
 <div class="mu">${r.length} de ${rows.length} registros${id==='ingresos'||id==='gastos'?' · Total filtrado: <b>'+fmt(sum(r,id==='gastos'?'Valor ($)':'Total ($)'))+'</b>':''}</div>
