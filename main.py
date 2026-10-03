@@ -1,4 +1,3 @@
-
 """Pole Dance Rojas Sport — panel de inventario, alumnas y finanzas (v11).
 
 Variables de entorno (en Render → Environment):
@@ -431,6 +430,12 @@ tr:hover td{background:#f0fdf4}
 .neg{color:var(--bad);font-weight:700}.pos{color:var(--ok);font-weight:700}
 .mu{color:var(--mu);font-size:.8rem;margin:8px 2px}.more{width:100%;margin-top:10px;padding:10px;border:1.5px dashed #cbd5e1;border-radius:10px;background:#f8fafc;cursor:pointer;font-weight:700;color:var(--mu)}
 .av{width:44px;height:44px;border-radius:10px;object-fit:cover;cursor:zoom-in;background:#f1f5f9}
+.prog{height:16px;border-radius:9px;background:#e2e8f0;overflow:hidden}.prog i{display:block;height:100%;border-radius:9px;background:linear-gradient(90deg,var(--p),var(--a))}
+.kpi small{display:block;margin-top:2px}
+.cont .ln{display:flex;justify-content:space-between;gap:14px;align-items:flex-start;padding:11px 2px;border-bottom:1px solid #f1f5f9}
+.cont .ln span{font-size:.9rem;font-weight:600}.cont .ln small,.cont .nt{display:block;color:var(--mu);font-size:.75rem;margin-top:3px;line-height:1.35}
+.cont .ln b{font-size:1rem;white-space:nowrap}.cont .tot{border-bottom:0;border-top:2px solid var(--tx);margin-top:4px;background:#f8fafc;border-radius:8px;padding:12px 8px}
+.cont .tot span{font-weight:800}.cont .tot b{font-size:1.1rem}.cont .nt{padding:0 8px 6px}
 #toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#0f172a;color:#fff;padding:12px 18px;border-radius:14px;font-size:.9rem;z-index:100;display:none;box-shadow:0 10px 30px #0008}
 </style></head><body><div class="w">
 <header><img src="/icono/192.png" alt="">
@@ -449,7 +454,7 @@ cont:{n:'📑 Contable',kw:'contable'}};
 const OCULTAS=/^(Clave \(auto\)|Alumna \(lista, auto\)|Nombre \+ Apellidos \(auto\)|Orden lista \(auto\)|ID Alumna \(auto\))$/;
 let D={},tab='resumen',S={},F=new Map();
 const $=s=>document.querySelector(s),esc=v=>String(v??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-const fmt=n=>'$'+Math.round(n||0).toLocaleString('es-CO'),num=v=>Number(v)||0;
+const fmt=n=>(n<0?'-$':'$')+Math.abs(Math.round(n||0)).toLocaleString('es-CO'),num=v=>Number(v)||0;
 const titulo=c=>c.replace(/ \(auto\)$/,'');
 function toast(t,ms=3500){const e=$('#toast');e.textContent=t;e.style.display='block';clearTimeout(e._t);e._t=setTimeout(()=>e.style.display='none',ms)}
 const hoja=kw=>{const k=Object.keys(D).find(n=>n.toLowerCase().includes(kw));return k?D[k]:null};
@@ -489,7 +494,7 @@ ${ms.map(m=>`<div><div class="bb"><i title="${fmt(meses[m].i)}" style="height:${
 <div class="card"><h3>🏢 Activos por estado</h3>${barras(group(ac,'Estado','Valor Total ($)'),'activos','Estado',1)}</div></div>
 <p class="mu" style="color:#cbd5e1">Toca cualquier tarjeta o barra para ver el detalle filtrado.</p>`}
 function vista(id){const t=T[id],s=S[id]??={q:'',f:'',sc:null,asc:1,n:100};
-if(id==='cont'){const h=hoja('contable');return `<div class="card"><div class="tw"><table>${(h?h.filas:[]).map(f=>`<tr>${f.map(c=>`<td>${typeof c==='number'?fmt(c):esc(c)}</td>`).join('')}</tr>`).join('')}</table></div></div>`}
+if(id==='cont')return contable();
 let {cols,rows}=tabla(id);if(t.foto)cols=['Foto',...cols];const fc=t.fc;
 const opts=fc&&cols.includes(fc)?[...new Set(rows.map(r=>r[fc]).filter(v=>v!=null))].sort():[];
 let r=rows.filter(x=>(!s.f||String(x[fc])===s.f||(!fc||!cols.includes(fc))&&Object.values(x).includes(s.f))&&(!s.q||Object.values(x).join(' ').toLowerCase().includes(s.q.toLowerCase())));
@@ -502,6 +507,27 @@ ${opts.length?`<select onchange="S['${id}'].f=this.value;pintar()"><option value
 <div class="tw"><table><thead><tr>${cols.map(c=>`<th onclick="orden('${id}',this.dataset.c)" data-c="${esc(c)}">${esc(titulo(c))}${s.sc===c?(s.asc>0?' ▲':' ▼'):''}</th>`).join('')}</tr></thead>
 <tbody>${r.slice(0,s.n).map(x=>`<tr>${cols.map(c=>`<td>${cell(c,x[c],x)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>
 ${r.length>s.n?`<button class="more" onclick="S['${id}'].n+=200;pintar()">Ver más</button>`:''}</div>`}
+// ---- Contable: tarjetas por sección, cifra a la derecha y explicación en gris debajo ----
+function contable(){const h=hoja('contable');if(!h)return '<div class="card">No hay hoja contable.</div>';
+const secs=[];let intro='',cur=null;const val={};
+h.filas.forEach(f=>{const t=String(f[0]??'').trim(),n=f.find(x=>typeof x==='number'),nota=String(f.slice(1).find(x=>typeof x==='string')||'').replace(/^←\s*/,'');
+ if(!t)return;
+ if(/^\d+\.\s/.test(t)){const m=t.match(/^(\d+)\.\s*([^(]*)(\((.*)\))?/);cur={t:m[2].trim(),sub:m[4]||'',rows:[]};secs.push(cur);return}
+ if(n===undefined){if(!cur&&!/RESUMEN/.test(t))intro=t;return}
+ val[t]=n;(cur??=(secs.push({t:'',sub:'',rows:[]}),secs[secs.length-1])).rows.push({t,n,nota,tot:/^[A-ZÁÉÍÓÚÑ\/ ]{6,}/.test(t)})});
+const busca=re=>{const k=Object.keys(val).find(k=>re.test(k));return k?val[k]:0};
+const util=busca(/^UTILIDAD/),inv=busca(/^TOTAL INVERTIDO/),bal=busca(/^BALANCE NETO/);
+const pct=inv>0?Math.max(0,Math.min(100,util/inv*100)):0,cls=v=>v<0?'neg':'pos';
+const K=(t,v,sub,c)=>`<div class="card kpi" style="cursor:default"><h4>${t}</h4><b class="${c}">${fmt(v)}</b><small class="mu">${sub}</small></div>`;
+const icon=['💼','🏗️','⚖️'];
+return `<div class="g k">${K('Utilidad operativa',util,'el día a día',cls(util))}${K('Invertido para abrir',inv,'por recuperar','')}${K('Balance neto',bal,'caja real hasta hoy',cls(bal))}</div>
+${inv>0?`<div class="card" style="margin-bottom:14px"><h3>🎯 Recuperación de la inversión</h3>
+<div class="prog"><i style="width:${pct}%"></i></div>
+<p class="mu">Con la utilidad operativa actual llevas <b>${pct.toFixed(1)}%</b> recuperado de ${fmt(inv)}.${util>0&&pct<100?` Te faltan <b>${fmt(inv-util)}</b>.`:''}</p></div>`:''}
+<div class="g c2">${secs.map((s,i)=>`<div class="card cont"><h3>${icon[i]||'📑'} ${esc(s.t[0]+s.t.slice(1).toLowerCase())}</h3>${s.sub?`<p class="mu" style="margin-top:-8px">${esc(s.sub)}</p>`:''}
+${s.rows.map(r=>`<div class="ln${r.tot?' tot':''}"><div><span>${esc(r.tot?r.t.replace(/^[^(]+/,x=>x[0]+x.slice(1).toLowerCase()):r.t)}</span>${r.nota&&!r.tot?`<small>${esc(r.nota)}</small>`:''}</div>
+<b class="${r.n<0?'neg':r.tot?'':''}">${fmt(r.n)}</b></div>${r.nota&&r.tot?`<small class="nt">${esc(r.nota)}</small>`:''}`).join('')}</div>`).join('')}</div>
+${intro?`<p class="mu" style="color:#cbd5e1">ℹ️ ${esc(intro)}</p>`:''}`}
 const foto=id=>!id?'':`<span style="display:flex;gap:6px;align-items:center">${F.has(id)?`<img class="av" loading="lazy" src="/foto/${id}?w=120&v=${F.get(id)}" onclick="zoom('${id}')">`:''}<label class="chip" style="cursor:pointer">📷${F.has(id)?'':' Subir'}<input type="file" accept="image/*" hidden onchange="subirFoto('${id}',this.files[0])"></label>${F.has(id)?`<span class="chip r" style="cursor:pointer" onclick="borrarFoto('${id}')">✕</span>`:''}</span>`;
 function zoom(id){const d=document.createElement('div');d.style.cssText='position:fixed;inset:0;background:#000d;display:flex;align-items:center;justify-content:center;z-index:99;cursor:zoom-out;padding:20px';
 d.innerHTML=`<img src="/foto/${id}?v=${F.get(id)}" style="max-width:100%;max-height:100%;border-radius:12px">`;d.onclick=()=>d.remove();document.body.appendChild(d)}
