@@ -20,8 +20,9 @@ FOTOS_DIR = os.environ.get("FOTOS_DIR", os.path.join(STATIC, "fotos"))
 os.makedirs(FOTOS_DIR, exist_ok=True)
 
 CLAVE = os.environ.get("APP_CLAVE", "").strip()
-CLD = (os.environ.get("CLOUDINARY_CLOUD_NAME"), os.environ.get("CLOUDINARY_API_KEY"),
-       os.environ.get("CLOUDINARY_API_SECRET"))
+# .strip(): quita espacios o saltos de línea que se cuelan al copiar y pegar las claves
+CLD = tuple((os.environ.get(k) or "").strip().strip('"').strip("'") or None
+            for k in ("CLOUDINARY_CLOUD_NAME", "CLOUDINARY_API_KEY", "CLOUDINARY_API_SECRET"))
 USA_CLOUD = all(CLD)
 # Carpeta "secreta" del Excel en Cloudinary (derivada del API secret: nadie más puede adivinar la ruta)
 EXCEL_CLD = f"polesport/excel/{hashlib.sha1((CLD[2] or '').encode()).hexdigest()[:20]}" if USA_CLOUD else ""
@@ -79,6 +80,8 @@ def _cld_post(tipo, accion, params, files=None):
     r = _http("POST", f"https://api.cloudinary.com/v1_1/{CLD[0]}/{tipo}/{accion}",
                       data={**params, "api_key": CLD[1], "signature": _firma(params)}, files=files, timeout=60)
     if not r.ok:
+        if "Invalid Signature" in r.text or r.status_code == 401:
+            raise HTTPException(502, "Cloudinary rechazó la clave: revisa CLOUDINARY_API_SECRET en Render (cópiala de nuevo con el botón 📋).")
         raise HTTPException(502, "Error con Cloudinary: " + r.text[:200])
     return r.json()
 
