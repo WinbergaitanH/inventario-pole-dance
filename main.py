@@ -368,7 +368,7 @@ def manifest():
 @app.get("/sw.js")
 def sw():
     # Guarda la última versión de la app y de los datos: si no hay internet, abre con lo último que vio.
-    js = """const C='rojas-v16';
+    js = """const C='rojas-v17';
 self.addEventListener('install',e=>self.skipWaiting());
 self.addEventListener('activate',e=>e.waitUntil(caches.keys().then(k=>Promise.all(k.filter(x=>x!==C).map(x=>caches.delete(x))))));
 self.addEventListener('fetch',e=>{const u=new URL(e.request.url);
@@ -474,7 +474,7 @@ table.bal .tt td{font-weight:800;border-top:2px solid var(--tx);background:#f8fa
 if('serviceWorker'in navigator)navigator.serviceWorker.register('/sw.js');
 const T={resumen:{n:'📊 Resumen'},bal:{n:'💰 Balance'},alumnas:{n:'🎓 Alumnas',kw:'alumnas',req:'Nombre',fc:'Estado',foto:'ID Alumna'},
 ingresos:{n:'🤸 Ingresos',kw:'ingresos',req:'Alumna',fc:'Tipo'},gastos:{n:'💸 Gastos',kw:'gastos',req:'Valor ($)',fc:'Categoría'},
-stock:{n:'👗 Catálogo',kw:'catálogo',req:'Código',fc:'Estado',foto:'Código',orden:['Código','Descripción','Talla','Color','Stock','Estado','Precio venta ($)']},merc:{n:'📦 Entradas',kw:'marcancia',req:'Código Prenda',fc:'Clasificación',foto:'ID Entrada'},
+stock:{n:'👗 Catálogo',kw:'catálogo',req:'Código',fc:'Estado',foto:'Código',orden:['Código','Descripción','Talla','Color','Stock','Estado','Precio venta ($)']},merc:{n:'📦 Entradas',kw:['mercancia','marcancia'],req:'Código Prenda',fc:'Clasificación',foto:'ID Entrada'},
 activos:{n:'🏢 Activos',kw:'activos',req:'Nombre del Activo',fc:'Estado'},ventas:{n:'🛒 Ventas',kw:'ventas',req:'Código Prenda',fc:'Método Pago'},
 cont:{n:'📑 Contable',kw:'contable'}};
 // Columnas de apoyo del Excel que no se muestran en la app
@@ -484,7 +484,8 @@ const $=s=>document.querySelector(s),esc=v=>String(v??'').replace(/[&<>"]/g,c=>(
 const fmt=n=>(n<0?'-$':'$')+Math.abs(Math.round(n||0)).toLocaleString('es-CO'),num=v=>Number(v)||0;
 const titulo=c=>c.replace(/ \(auto\)$/,'');
 function toast(t,ms=3500){const e=$('#toast');e.textContent=t;e.style.display='block';clearTimeout(e._t);e._t=setTimeout(()=>e.style.display='none',ms)}
-const hoja=kw=>{const k=Object.keys(D).find(n=>n.toLowerCase().includes(kw));return k?D[k]:null};
+const norm=t=>String(t).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+const hoja=kw=>{const ks=(Array.isArray(kw)?kw:[kw]).map(norm);const k=Object.keys(D).find(n=>ks.some(x=>norm(n).includes(x)));return k?D[k]:null};
 function tabla(id){const t=T[id];const h=t.kw?hoja(t.kw):null;if(id==='stock'&&!h)return stock();if(!h)return{cols:[],rows:[]};
 // solo filas con ID en la 1.ª columna: así las filas de TOTAL dentro de las hojas no se cuentan dos veces
 const rows=h.filas.filter(f=>f[0]!=null&&f[0]!=='').map(f=>Object.fromEntries(h.cols.map((c,i)=>[c,f[i]]))).filter(r=>r[t.req]!=null&&r[t.req]!=='');
