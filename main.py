@@ -368,7 +368,7 @@ def manifest():
 @app.get("/sw.js")
 def sw():
     # Guarda la última versión de la app y de los datos: si no hay internet, abre con lo último que vio.
-    js = """const C='rojas-v14';
+    js = """const C='rojas-v16';
 self.addEventListener('install',e=>self.skipWaiting());
 self.addEventListener('activate',e=>e.waitUntil(caches.keys().then(k=>Promise.all(k.filter(x=>x!==C).map(x=>caches.delete(x))))));
 self.addEventListener('fetch',e=>{const u=new URL(e.request.url);
@@ -452,6 +452,17 @@ tr:hover td{background:#f0fdf4}
 .cont .ln span{font-size:.9rem;font-weight:600}.cont .ln small,.cont .nt{display:block;color:var(--mu);font-size:.75rem;margin-top:3px;line-height:1.35}
 .cont .ln b{font-size:1rem;white-space:nowrap}.cont .tot{border-bottom:0;border-top:2px solid var(--tx);margin-top:4px;background:#f8fafc;border-radius:8px;padding:12px 8px}
 .cont .tot span{font-weight:800}.cont .tot b{font-size:1.1rem}.cont .nt{padding:0 8px 6px}
+.res{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:0 0 12px}.res .sp{flex:1}.chip.g{background:#e0e7ff;color:#1e3a8a}
+.lnk{border:0;background:none;color:var(--a);font-weight:700;cursor:pointer;font-size:.8rem;padding:4px 6px}
+.cards{display:grid;gap:10px;grid-template-columns:repeat(auto-fill,minmax(260px,1fr))}
+.it{border:1px solid #e2e8f0;border-radius:14px;padding:12px;display:flex;gap:10px;background:#fff}.itb{min-width:0;flex:1}
+.itb>div:first-child{margin-bottom:6px;font-size:.92rem}
+.it dl{display:grid;gap:3px;margin:0}.it dl div{display:flex;justify-content:space-between;gap:10px;font-size:.8rem;border-bottom:1px dashed #f1f5f9;padding:2px 0}
+.it dt{color:var(--mu)}.it dd{margin:0;text-align:right;overflow-wrap:anywhere}
+table.bal td,table.bal th{text-align:right}table.bal td:first-child,table.bal th:first-child{text-align:left}
+table.bal .e{background:#ecfdf3;font-weight:700}table.bal .s{background:#fef2f2;font-weight:700}table.bal .iv{background:#f5f3ff;color:#6d28d9;font-style:italic}table.bal .b{background:#eff6ff;font-weight:700}
+.seg{border:1.5px solid #cbd5e1;background:#f8fafc;border-radius:30px;padding:8px 14px;font-weight:700;cursor:pointer;color:var(--tx)}.seg.on{background:linear-gradient(135deg,var(--p),var(--a));color:#fff;border-color:transparent}
+table.bal .tt td{font-weight:800;border-top:2px solid var(--tx);background:#f8fafc}
 #toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#0f172a;color:#fff;padding:12px 18px;border-radius:14px;font-size:.9rem;z-index:100;display:none;box-shadow:0 10px 30px #0008}
 </style></head><body><div class="w">
 <header><img src="/icono/192.png?v=3" alt="">
@@ -461,7 +472,7 @@ tr:hover td{background:#f0fdf4}
 <nav id="nav"></nav><main id="main"><div class="card">Cargando…</div></main></div><div id="toast"></div>
 <script>
 if('serviceWorker'in navigator)navigator.serviceWorker.register('/sw.js');
-const T={resumen:{n:'📊 Resumen'},alumnas:{n:'🎓 Alumnas',kw:'alumnas',req:'Nombre',fc:'Estado',foto:'ID Alumna'},
+const T={resumen:{n:'📊 Resumen'},bal:{n:'💰 Balance'},alumnas:{n:'🎓 Alumnas',kw:'alumnas',req:'Nombre',fc:'Estado',foto:'ID Alumna'},
 ingresos:{n:'🤸 Ingresos',kw:'ingresos',req:'Alumna',fc:'Tipo'},gastos:{n:'💸 Gastos',kw:'gastos',req:'Valor ($)',fc:'Categoría'},
 stock:{n:'👗 Catálogo',kw:'catálogo',req:'Código',fc:'Estado',foto:'Código',orden:['Código','Descripción','Talla','Color','Stock','Estado','Precio venta ($)']},merc:{n:'📦 Entradas',kw:'marcancia',req:'Código Prenda',fc:'Clasificación',foto:'ID Entrada'},
 activos:{n:'🏢 Activos',kw:'activos',req:'Nombre del Activo',fc:'Estado'},ventas:{n:'🛒 Ventas',kw:'ventas',req:'Código Prenda',fc:'Método Pago'},
@@ -488,7 +499,7 @@ return Object.entries(m).sort((a,b)=>b[1]-a[1])}
 function barras(items,id,col,money){const mx=Math.max(...items.map(i=>i[1]),1);
 return items.slice(0,8).map(([k,v])=>`<div class="br" onclick="ir('${id}','${col}',this.dataset.k)" data-k="${esc(k)}"><span>${esc(k)}</span>
 <i style="width:${v/mx*45}%"></i><em>${money?fmt(v):v}</em></div>`).join('')||'<p class="mu">Sin datos</p>'}
-function ir(id,col,val){S[id]={q:'',f:val&&col?val:'',sc:null,asc:1,n:100};tab=id;pintar()}
+function ir(id,col,val){S[id]={q:'',f:val&&col?val:'',col:col||'',mes:'',sc:null,asc:1,n:100,vista:''};tab=id;pintar()}
 function resumen(){const al=tabla('alumnas').rows,ing=tabla('ingresos').rows,ga=tabla('gastos').rows,ac=tabla('activos').rows,st=tabla('stock').rows,ve=tabla('ventas').rows;
 const IC=sum(ing,'Total ($)'),IV=sum(ve,'Total Venta ($)'),I=IC+IV,G=sum(ga,'Valor ($)'),nuevas=al.filter(a=>a.Estado==='Nueva').length,rec=al.filter(a=>a.Estado==='Recurrente').length;
 const meses={};ing.forEach(r=>{const m=String(r.Fecha||'').slice(0,7);if(m)(meses[m]??={i:0,g:0}).i+=num(r['Total ($)'])});
@@ -515,20 +526,83 @@ ${ms.map(m=>`<div><div class="bb"><i title="${fmt(meses[m].i)}" style="height:${
 <div class="card"><h3>👗 Inventario por estado</h3>${barras(group(st,'Estado'),'stock','Estado')}</div>
 <div class="card"><h3>🏢 Activos por estado</h3>${barras(group(ac,'Estado','Valor Total ($)'),'activos','Estado',1)}</div></div>
 <p class="mu" style="color:#cbd5e1">Toca cualquier tarjeta o barra para ver el detalle filtrado.</p>`}
-function vista(id){const t=T[id],s=S[id]??={q:'',f:'',sc:null,asc:1,n:100};
-if(id==='cont')return contable();
-let {cols,rows}=tabla(id);if(t.orden)cols=[...t.orden.filter(c=>cols.includes(c)),...cols.filter(c=>!t.orden.includes(c))];if(t.foto)cols=['Foto',...cols];const fc=t.fc;
-const opts=fc&&cols.includes(fc)?[...new Set(rows.map(r=>r[fc]).filter(v=>v!=null))].sort():[];
-let r=rows.filter(x=>(!s.f||String(x[fc])===s.f||(!fc||!cols.includes(fc))&&Object.values(x).includes(s.f))&&(!s.q||Object.values(x).join(' ').toLowerCase().includes(s.q.toLowerCase())));
+function vista(id){const t=T[id],s=S[id]??={q:'',f:'',col:'',mes:'',sc:null,asc:1,n:100,vista:''};
+if(id==='cont')return contable();if(id==='bal')return balance();
+let {cols,rows}=tabla(id);if(t.orden)cols=[...t.orden.filter(c=>cols.includes(c)),...cols.filter(c=>!t.orden.includes(c))];
+const fc=t.fc,colF=s.col||(cols.includes(fc)?fc:''),fcol=cols.find(c=>/^Fecha/i.test(c));
+const dinero=cols.filter(c=>/\(\$\)|precio|valor/i.test(c)&&rows.some(x=>typeof x[c]==='number'));
+// columnas que sirven para filtrar: pocas opciones distintas
+const filtrables=cols.filter(c=>{const u=new Set(rows.map(x=>x[c]).filter(v=>v!=null&&v!==''));return u.size>1&&u.size<=40&&!dinero.includes(c)&&c!==fcol});
+const opts=colF?[...new Set(rows.map(x=>x[colF]).filter(v=>v!=null&&v!==''))].map(String).sort():[];
+const meses=fcol?[...new Set(rows.map(x=>String(x[fcol]||'').slice(0,7)).filter(Boolean))].sort().reverse():[];
+let r=rows.filter(x=>(!s.f||!colF||String(x[colF])===s.f)&&(!s.mes||String(x[fcol]||'').startsWith(s.mes))
+ &&(!s.q||Object.values(x).join(' ').toLowerCase().includes(s.q.toLowerCase())));
 if(s.sc)r.sort((a,b)=>((a[s.sc]??'')>(b[s.sc]??'')?1:-1)*s.asc);
-const cell=(c,v,x)=>c==='Foto'?foto(x[t.foto]):v==null?'':typeof v==='number'&&/\(\$\)|precio|valor/i.test(c)?fmt(v)
- :/^(Varias|No encontrada)/.test(String(v))?`<span class="chip r">${esc(v)}</span>`:c==='Estado'||c===fc?`<span class="chip${/Agotado/.test(v)?' r':/Última/.test(v)?' a':''}">${esc(v)}</span>`:esc(v);
+const C=t.foto?['Foto',...cols]:cols;
+const cell=(c,v,x)=>c==='Foto'?foto(x[t.foto]):v==null?'':typeof v==='number'&&dinero.includes(c)?fmt(v)
+ :/^(Varias|No encontrada)/.test(String(v))?`<span class="chip r">${esc(v)}</span>`:c==='Estado'||c===colF?`<span class="chip${/Agotado/.test(v)?' r':/Última/.test(v)?' a':''}">${esc(v)}</span>`:esc(v);
+const tarjetas=(s.vista||(innerWidth<720?'t':'l'))==='t';
+const hayF=s.q||s.f||s.mes;
+const nomMes=m=>{const[y,mm]=m.split('-');return['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'][+mm-1]+' '+y};
+const tk=['Descripción','Concepto / Descripción','Alumna','Nombre del Activo','Concepto','Nombre'].find(c=>cols.includes(c))||cols[0];
+const titulo1=x=>esc(x[tk]??'')+(tk==='Nombre'&&x.Apellidos?' '+esc(x.Apellidos):'');
+const lado=x=>dinero.length&&typeof x[dinero[dinero.length-1]]==='number'?`<span style="white-space:nowrap;font-weight:800;color:${id==='gastos'?'var(--bad)':'var(--ok)'}">${fmt(x[dinero[dinero.length-1]])}</span>`:'';
 return `<div class="card"><div class="tb"><input placeholder="🔍 Buscar en ${t.n}…" value="${esc(s.q)}" oninput="S['${id}'].q=this.value;S['${id}'].n=100;repintar('${id}')" id="q">
-${opts.length?`<select onchange="S['${id}'].f=this.value;pintar()"><option value="">Todos (${fc})</option>${opts.map(o=>`<option ${o===s.f?'selected':''}>${esc(o)}</option>`).join('')}</select>`:''}</div>
-<div class="mu">${r.length} de ${rows.length} registros${id==='ingresos'||id==='gastos'?' · Total filtrado: <b>'+fmt(sum(r,id==='gastos'?'Valor ($)':'Total ($)'))+'</b>':''}</div>
-<div class="tw"><table><thead><tr>${cols.map(c=>`<th onclick="orden('${id}',this.dataset.c)" data-c="${esc(c)}">${esc(titulo(c))}${s.sc===c?(s.asc>0?' ▲':' ▼'):''}</th>`).join('')}</tr></thead>
-<tbody>${r.slice(0,s.n).map(x=>`<tr>${cols.map(c=>`<td>${cell(c,x[c],x)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>
-${r.length>s.n?`<button class="more" onclick="S['${id}'].n+=200;pintar()">Ver más</button>`:''}</div>`}
+${meses.length?`<select aria-label="Mes" onchange="S['${id}'].mes=this.value;pintar()"><option value="">📅 Todos los meses</option>${meses.map(m=>`<option value="${m}" ${m===s.mes?'selected':''}>${nomMes(m)}</option>`).join('')}</select>`:''}
+${filtrables.length?`<select aria-label="Filtrar por" onchange="S['${id}'].col=this.value;S['${id}'].f='';pintar()">${filtrables.map(c=>`<option value="${esc(c)}" ${c===colF?'selected':''}>Filtrar por: ${esc(titulo(c))}</option>`).join('')}</select>
+<select aria-label="Valor" onchange="S['${id}'].f=this.value;pintar()"><option value="">Todos</option>${opts.map(o=>`<option ${o===s.f?'selected':''}>${esc(o)}</option>`).join('')}</select>`:''}
+</div><div class="res"><span class="chip">${r.length} de ${rows.length} registros</span>${dinero.map(c=>`<span class="chip g">${esc(titulo(c))}: <b>${fmt(sum(r,c))}</b></span>`).join('')}
+<span class="sp"></span>${hayF?`<button class="lnk" onclick="S['${id}']={...S['${id}'],q:'',f:'',mes:''};pintar()">✕ Limpiar filtros</button>`:''}
+<button class="lnk" onclick="S['${id}'].vista='${tarjetas?'l':'t'}';pintar()">${tarjetas?'☰ Ver tabla':'▦ Ver tarjetas'}</button></div>
+${tarjetas?`<div class="cards">${r.slice(0,s.n).map(x=>`<div class="it">${t.foto?`<div class="itf">${foto(x[t.foto])}</div>`:''}<div class="itb"><div style="display:flex;justify-content:space-between;gap:8px"><b>${titulo1(x)}</b>${lado(x)}</div>
+<dl>${C.filter(c=>c!=='Foto').map(c=>x[c]==null||x[c]===''?'':`<div><dt>${esc(titulo(c))}</dt><dd>${cell(c,x[c],x)}</dd></div>`).join('')}</dl></div></div>`).join('')||'<p class="mu">Sin resultados con estos filtros.</p>'}</div>`
+:`<div class="tw"><table><thead><tr>${C.map(c=>`<th onclick="orden('${id}',this.dataset.c)" data-c="${esc(c)}">${esc(titulo(c))}${s.sc===c?(s.asc>0?' ▲':' ▼'):''}</th>`).join('')}</tr></thead>
+<tbody>${r.slice(0,s.n).map(x=>`<tr>${C.map(c=>`<td>${cell(c,x[c],x)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`}
+${r.length>s.n?`<button class="more" onclick="S['${id}'].n+=200;pintar()">Ver más (${r.length-s.n} restantes)</button>`:''}</div>`}
+// ---- Balance mes a mes: operativo vs total; la inversión inicial se muestra aparte y no se resta ----
+function balance(){const M={},add=(m,k,v)=>{if(!m||!v)return;(M[m]??={cl:0,ve:0,op:0,rep:0,pre:0,otr:0,inv:0})[k]+=v};
+const mes=v=>String(v||'').slice(0,7),INV=/inversi[oó]n inicial/i;
+tabla('ingresos').rows.forEach(r=>add(mes(r.Fecha),'cl',num(r['Total ($)'])));
+tabla('ventas').rows.forEach(r=>add(mes(r.Fecha),'ve',num(r['Total Venta ($)'])));
+tabla('gastos').rows.forEach(r=>{const c=String(r['Clasificación Contable']||'');add(mes(r.Fecha),INV.test(c)?'inv':/^operativo/i.test(c)?'op':/preoperativo/i.test(c)?'pre':'otr',num(r['Valor ($)']))});
+tabla('merc').rows.forEach(r=>{const c=String(r['Clasificación']||'');add(mes(r.Fecha),INV.test(c)?'inv':/reposici/i.test(c)?'rep':'otr',num(r['Costo Total ($)']))});
+tabla('activos').rows.forEach(r=>add(mes(r['Fecha Adquisición']),INV.test(String(r['Clasificación']||''))?'inv':'otr',num(r['Valor Total ($)'])));
+const ms=Object.keys(M).sort();let aO=0,aT=0;
+const L=ms.map(m=>{const x=M[m],e=x.cl+x.ve,gO=x.op+x.rep,gT=gO+x.pre+x.otr;aO+=e-gO;aT+=e-gT;return{m,...x,e,gO,gT,bO:e-gO,bT:e-gT,aO,aT}});
+if(!L.length)return '<div class="card">No hay movimientos con fecha.</div>';
+const v=S.balv||'tot',G=v==='op'?'gO':'gT',B=v==='op'?'bO':'bT',A=v==='op'?'aO':'aT';
+const nomMes=m=>{const[y,mm]=m.split('-');return['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'][+mm-1]+' '+y.slice(2)};
+const tot=k=>L.reduce((s,x)=>s+x[k],0),mx=Math.max(...L.map(x=>Math.max(x.e,x[G])),1);
+const st=Math.max(90,Math.floor(1000/L.length)),W=Math.max(L.length*st+40,300),H=210,vals=L.map(x=>x[A]),aMin=Math.min(0,...vals),aMax=Math.max(0,...vals),rg=(aMax-aMin)||1;
+const px=i=>50+i*st,py=y=>30+(aMax-y)/rg*(H-70),Mf=y=>(y<0?'-':'')+'$'+(Math.abs(y)/1e6).toFixed(1).replace('.',',')+' M';
+const svg=`<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-label="Acumulado"><line x1="0" x2="${W}" y1="${py(0)}" y2="${py(0)}" stroke="#94a3b8" stroke-dasharray="4 4"/><text x="4" y="${py(0)-5}" font-size="10" fill="#64748b">$0</text>
+<polyline fill="none" stroke="#1e3a8a" stroke-width="3" points="${L.map((x,i)=>px(i)+','+py(x[A])).join(' ')}"/>
+${L.map((x,i)=>`<circle cx="${px(i)}" cy="${py(x[A])}" r="5" fill="${x[A]<0?'#ef4444':'#22a94b'}"/><text x="${px(i)}" y="${py(x[A])-11}" font-size="10.5" text-anchor="middle" fill="#1e1b4b" font-weight="700">${Mf(x[A])}</text><text x="${px(i)}" y="${H-4}" font-size="11" text-anchor="middle" fill="#64748b">${nomMes(x.m)}</text>`).join('')}</svg>`;
+const K=(t,val,c,sub)=>`<div class="card kpi" style="cursor:default"><h4>${t}</h4><b class="${c}">${fmt(val)}</b><small class="mu" style="display:block">${sub}</small></div>`;
+const btn=(k,t)=>`<button class="seg${v===k?' on':''}" onclick="S.balv='${k}';pintar()">${t}</button>`;
+return `<div class="card" style="margin-bottom:14px;display:flex;flex-wrap:wrap;gap:10px;align-items:center"><b>Ver el balance con:</b>${btn('op','Solo gastos operativos')}${btn('tot','Gastos totales')}
+<span class="mu">En ninguno se resta la inversión inicial.</span></div>
+<div class="g k">${K('Entradas',tot('e'),'pos','clases + ventas')}${K(v==='op'?'Gastos operativos':'Gastos totales',tot(G),'neg',v==='op'?'operativos + reposición':'operativos + preoperativos + otros')}
+${K('Balance '+(v==='op'?'operativo':'total'),tot(B),tot(B)<0?'neg':'pos','acumulado hasta hoy')}${K('Inversión inicial',tot('inv'),'',"aparte: no se resta")}</div>
+<div class="card" style="margin-bottom:14px"><h3>📊 Entradas vs ${v==='op'?'gastos operativos':'gastos totales'} <small class="mu">(🟢 entradas · 🔴 gastos)</small></h3>
+<div class="mes" style="height:200px">${L.map(x=>`<div onclick="S.balm='${x.m}';pintar()" style="cursor:pointer"><div class="bb" style="height:160px"><i title="Entradas ${fmt(x.e)}" style="height:${x.e/mx*100}%;background:var(--p)"></i><i title="Gastos ${fmt(x[G])}" style="height:${x[G]/mx*100}%;background:var(--bad)"></i></div><b class="${x[B]<0?'neg':'pos'}" style="font-size:.68rem">${fmt(x[B])}</b><br>${nomMes(x.m)}</div>`).join('')}</div></div>
+<div class="card" style="margin-bottom:14px"><h3>📈 Acumulado ${v==='op'?'operativo':'total'}</h3><div style="overflow-x:auto">${svg}</div></div>
+<div class="card"><h3>🧾 Detalle mes a mes</h3><div class="tw"><table class="bal"><thead><tr><th>Mes</th><th class="e">Entradas</th><th>Gastos operativos</th><th>Reposición mercancía</th><th>Gastos preoperativos</th><th>Otros</th><th class="s">Total gastos</th><th class="iv">Inversión inicial</th><th class="b">Balance operativo</th><th class="b">Balance total</th><th>Acum. operativo</th><th>Acum. total</th></tr></thead>
+<tbody>${L.map(x=>`<tr><td><b>${nomMes(x.m)}</b></td><td class="e">${fmt(x.e)}</td><td>${fmt(x.op)}</td><td>${fmt(x.rep)}</td><td>${fmt(x.pre)}</td><td>${fmt(x.otr)}</td><td class="s">${fmt(x.gT)}</td><td class="iv">${fmt(x.inv)}</td><td class="b ${x.bO<0?'neg':'pos'}">${fmt(x.bO)}</td><td class="b ${x.bT<0?'neg':'pos'}">${fmt(x.bT)}</td><td class="${x.aO<0?'neg':'pos'}">${fmt(x.aO)}</td><td class="${x.aT<0?'neg':'pos'}">${fmt(x.aT)}</td></tr>`).join('')}
+<tr class="tt"><td>Total</td><td class="e">${fmt(tot('e'))}</td><td>${fmt(tot('op'))}</td><td>${fmt(tot('rep'))}</td><td>${fmt(tot('pre'))}</td><td>${fmt(tot('otr'))}</td><td class="s">${fmt(tot('gT'))}</td><td class="iv">${fmt(tot('inv'))}</td><td class="${tot('bO')<0?'neg':'pos'}">${fmt(tot('bO'))}</td><td class="${tot('bT')<0?'neg':'pos'}">${fmt(tot('bT'))}</td><td></td><td></td></tr></tbody></table></div>
+<p class="mu"><b>Balance operativo</b> = entradas − gastos operativos − reposición de mercancía (¿el día a día se sostiene?). <b>Balance total</b> = entradas − todos los gastos (operativos, preoperativos y otros). Lo marcado <b>"Inversión Inicial"</b> en Gastos, Activos o Marcancia va en su propia columna y no se resta en ninguno. Toca una barra para ver el detalle del mes.</p></div>
+${S.balm?detalleMes(S.balm):''}`}
+function detalleMes(m){const NM=['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'][+m.slice(5,7)-1]+' '+m.slice(0,4);
+const f=r=>String(r.Fecha||r['Fecha Adquisición']||'').startsWith(m),INV=/inversi[oó]n inicial/i;
+const ga=tabla('gastos').rows.filter(f),ing=tabla('ingresos').rows.filter(f),ve=tabla('ventas').rows.filter(f),me=tabla('merc').rows.filter(f),ac=tabla('activos').rows.filter(f);
+const et=c=>INV.test(c)?'inv.':/^operativo/i.test(c)?'op.':/preoperativo/i.test(c)?'preop.':'otro';
+const gastos=group(ga.filter(r=>!INV.test(String(r['Clasificación Contable']||''))).map(r=>({...r,k:(r['Categoría']||'(sin categoría)')+' ('+et(String(r['Clasificación Contable']||''))+')'})),'k','Valor ($)');
+const rep=sum(me.filter(r=>/reposici/i.test(String(r['Clasificación']||''))),'Costo Total ($)');if(rep)gastos.push(['Reposición mercancía (op.)',rep]);
+const invI=[['Gastos marcados Inversión Inicial',sum(ga.filter(r=>INV.test(String(r['Clasificación Contable']||''))),'Valor ($)')],['Activos fijos',sum(ac.filter(r=>INV.test(String(r['Clasificación']||''))),'Valor Total ($)')],['Mercancía inicial',sum(me.filter(r=>INV.test(String(r['Clasificación']||''))),'Costo Total ($)')]].filter(x=>x[1]);
+const entradas=[...group(ing,'Tipo','Total ($)').map(([k,v])=>['Clases: '+k,v]),['Ventas de mercancía',sum(ve,'Total Venta ($)')]].filter(x=>x[1]).sort((a,b)=>b[1]-a[1]);
+const lista=(it,c)=>{it=it.sort((a,b)=>b[1]-a[1]);const mx=Math.max(...it.map(i=>i[1]),1);return it.map(([k,v])=>`<div class="br" style="cursor:default"><span title="${esc(k)}">${esc(k)}</span><i style="width:${v/mx*45}%;background:${c}"></i><em>${fmt(v)}</em></div>`).join('')||'<p class="mu">Sin movimientos</p>'};
+return `<div class="g c2" style="margin-top:14px"><div class="card"><h3>🟢 Qué entró en ${NM}</h3>${lista(entradas,'var(--p)')}</div><div class="card"><h3>🔴 Gastos de ${NM} <small class="mu">(op. = operativo · preop. = preoperativo)</small></h3>${lista(gastos,'var(--bad)')}</div>
+${invI.length?`<div class="card"><h3>🟣 Inversión inicial de ${NM} <small class="mu">(no se resta)</small></h3>${lista(invI,'#7c3aed')}</div>`:''}</div>`}
 // ---- Contable: tarjetas por sección, cifra a la derecha y explicación en gris debajo ----
 function contable(){const h=hoja('contable');if(!h)return '<div class="card">No hay hoja contable.</div>';
 const secs=[];let intro='',cur=null;const val={};
