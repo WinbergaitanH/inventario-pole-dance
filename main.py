@@ -431,7 +431,7 @@ def manifest():
 @app.get("/sw.js")
 def sw():
     # Guarda la última versión de la app y de los datos: si no hay internet, abre con lo último que vio.
-    js = """const C='rojas-v18';
+    js = """const C='rojas-v19';
 self.addEventListener('install',e=>self.skipWaiting());
 self.addEventListener('activate',e=>e.waitUntil(caches.keys().then(k=>Promise.all(k.filter(x=>x!==C).map(x=>caches.delete(x))))));
 self.addEventListener('fetch',e=>{const u=new URL(e.request.url);
@@ -526,6 +526,33 @@ table.bal td,table.bal th{text-align:right}table.bal td:first-child,table.bal th
 table.bal .e{background:#ecfdf3;font-weight:700}table.bal .s{background:#fef2f2;font-weight:700}table.bal .iv{background:#f5f3ff;color:#6d28d9;font-style:italic}table.bal .b{background:#eff6ff;font-weight:700}
 .seg{border:1.5px solid #cbd5e1;background:#f8fafc;border-radius:30px;padding:8px 14px;font-weight:700;cursor:pointer;color:var(--tx)}.seg.on{background:linear-gradient(135deg,var(--p),var(--a));color:#fff;border-color:transparent}
 table.bal .tt td{font-weight:800;border-top:2px solid var(--tx);background:#f8fafc}
+.fade{animation:fd .25s ease}@keyframes fd{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.seg.sm{padding:6px 11px;font-size:.75rem}.segs{display:flex;gap:4px;flex-wrap:wrap}
+.fpanel{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:14px;padding:12px;margin-bottom:12px}
+.fsel{display:flex;flex-direction:column;gap:4px;font-size:.72rem;font-weight:700;color:var(--mu);text-transform:uppercase;letter-spacing:.4px}
+.fsel select{padding:9px 10px;border:1.5px solid #cbd5e1;border-radius:10px;font-size:.85rem;background:#fff;text-transform:none;letter-spacing:0;color:var(--tx)}
+.act{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}.act a{cursor:pointer;margin-left:4px;font-weight:800}
+.fbt{display:flex;gap:5px;align-items:center}.fbt .chip{cursor:pointer;padding:5px 8px}.chip.cam{background:#dbeafe;color:#1e3a8a}
+.monto{white-space:nowrap;font-weight:800;color:var(--ok)}.monto.neg{color:var(--bad)}.ith{display:flex;justify-content:space-between;gap:8px;margin-bottom:6px;font-size:.92rem}
+.it{transition:.2s}.it:hover{box-shadow:0 8px 20px -10px #1e3a8a55;transform:translateY(-2px)}
+.gal{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px}
+.gi{background:#fff;border:1px solid #e2e8f0;border-radius:16px;overflow:hidden;display:flex;flex-direction:column;transition:.2s}
+.gi:hover{transform:translateY(-3px);box-shadow:0 14px 28px -14px #1e3a8a66}
+.gph{position:relative;aspect-ratio:1;background:linear-gradient(135deg,#f1f5f9,#e0e7ff)}.gph img{width:100%;height:100%;object-fit:cover;cursor:zoom-in;display:block}
+.noph{height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:2.4rem;opacity:.55}.noph small{font-size:.75rem;font-weight:700;color:var(--mu)}
+.badge{position:absolute;top:8px;left:8px;background:#dcfce7;color:#166534;font-size:.7rem;font-weight:800;padding:4px 9px;border-radius:20px}
+.badge.r{background:#fee2e2;color:#991b1b}.badge.a{background:#fef3c7;color:#92400e}
+.code{position:absolute;top:8px;right:8px;background:#0f172acc;color:#fff;font-size:.7rem;font-weight:800;padding:4px 8px;border-radius:8px}
+.gb{padding:10px 12px 12px;display:flex;flex-direction:column;gap:4px;flex:1}.gb b{font-size:.85rem;line-height:1.25}.gb small{color:var(--mu);font-size:.75rem}
+.gf{display:flex;justify-content:space-between;align-items:center;margin-top:auto;padding-top:6px}
+.lb{position:fixed;inset:0;background:#000d;display:flex;align-items:center;justify-content:center;z-index:99;padding:20px;animation:fd .2s}
+.lb figure{margin:0;max-width:100%;max-height:100%;display:flex;flex-direction:column;align-items:center;gap:10px}.lb img{max-width:100%;max-height:80vh;border-radius:14px}
+.lb figcaption{color:#fff;font-size:.9rem}.lb>button{position:absolute;top:14px;right:14px;border:0;background:#ffffff22;color:#fff;font-size:1.2rem;width:40px;height:40px;border-radius:50%;cursor:pointer}
+.sub{background:#fff;padding:18px 24px;border-radius:14px;font-weight:700;display:flex;gap:10px;align-items:center}.sub i{width:18px;height:18px;border:3px solid #cbd5e1;border-top-color:var(--p);border-radius:50%;animation:gira .8s linear infinite}
+@keyframes gira{to{transform:rotate(360deg)}}
+tbody tr:nth-child(even) td{background:#fafbff}nav button{transition:.2s}nav button:hover:not(.on){color:#fff;background:#ffffff14}
+.card{transition:box-shadow .2s}.br{transition:background .15s}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 #toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#0f172a;color:#fff;padding:12px 18px;border-radius:14px;font-size:.9rem;z-index:100;display:none;box-shadow:0 10px 30px #0008}
 </style></head><body><div class="w">
 <header><img src="/icono/192.png?v=3" alt="">
@@ -563,7 +590,7 @@ return Object.entries(m).sort((a,b)=>b[1]-a[1])}
 function barras(items,id,col,money){const mx=Math.max(...items.map(i=>i[1]),1);
 return items.slice(0,8).map(([k,v])=>`<div class="br" onclick="ir('${id}','${col}',this.dataset.k)" data-k="${esc(k)}"><span>${esc(k)}</span>
 <i style="width:${v/mx*45}%"></i><em>${money?fmt(v):v}</em></div>`).join('')||'<p class="mu">Sin datos</p>'}
-function ir(id,col,val){S[id]={q:'',f:val&&col?val:'',col:col||'',mes:'',sc:null,asc:1,n:100,vista:''};tab=id;pintar()}
+function ir(id,col,val){S[id]={q:'',fl:col&&val?{[col]:val}:{},mes:'',sc:null,asc:1,n:120,vista:'',panel:false};tab=id;pintar();scrollTo({top:0,behavior:'smooth'})}
 function resumen(){const al=tabla('alumnas').rows,ing=tabla('ingresos').rows,ga=tabla('gastos').rows,ac=tabla('activos').rows,st=tabla('stock').rows,ve=tabla('ventas').rows;
 const IC=sum(ing,'Total ($)'),IV=sum(ve,'Total Venta ($)'),I=IC+IV,G=sum(ga,'Valor ($)'),nuevas=al.filter(a=>a.Estado==='Nueva').length,rec=al.filter(a=>a.Estado==='Recurrente').length;
 const meses={};ing.forEach(r=>{const m=String(r.Fecha||'').slice(0,7);if(m)(meses[m]??={i:0,g:0}).i+=num(r['Total ($)'])});
@@ -590,35 +617,47 @@ ${ms.map(m=>`<div><div class="bb"><i title="${fmt(meses[m].i)}" style="height:${
 <div class="card"><h3>👗 Inventario por estado</h3>${barras(group(st,'Estado'),'stock','Estado')}</div>
 <div class="card"><h3>🏢 Activos por estado</h3>${barras(group(ac,'Estado','Valor Total ($)'),'activos','Estado',1)}</div></div>
 <p class="mu" style="color:#cbd5e1">Toca cualquier tarjeta o barra para ver el detalle filtrado.</p>`}
-function vista(id){const t=T[id],s=S[id]??={q:'',f:'',col:'',mes:'',sc:null,asc:1,n:100,vista:''};
+function vista(id){const t=T[id],s=S[id]??={q:'',fl:{},mes:'',sc:null,asc:1,n:120,vista:'',panel:false};s.fl??={};
 if(id==='cont')return contable();if(id==='bal')return balance();
 let {cols,rows}=tabla(id);if(t.orden)cols=[...t.orden.filter(c=>cols.includes(c)),...cols.filter(c=>!t.orden.includes(c))];
-const fc=t.fc,colF=s.col||(cols.includes(fc)?fc:''),fcol=cols.find(c=>/^Fecha/i.test(c));
+const fcol=cols.find(c=>/^Fecha/i.test(c));
 const dinero=cols.filter(c=>/\(\$\)|precio|valor/i.test(c)&&rows.some(x=>typeof x[c]==='number'));
-// columnas que sirven para filtrar: pocas opciones distintas
-const filtrables=cols.filter(c=>{const u=new Set(rows.map(x=>x[c]).filter(v=>v!=null&&v!==''));return u.size>1&&u.size<=40&&!dinero.includes(c)&&c!==fcol});
-const opts=colF?[...new Set(rows.map(x=>x[colF]).filter(v=>v!=null&&v!==''))].map(String).sort():[];
+// cualquier columna con valores repetidos sirve para filtrar (no solo una)
+const filtrables=cols.filter(c=>{const u=new Set(rows.map(x=>x[c]).filter(v=>v!=null&&v!==''));return u.size>1&&u.size<=80&&u.size<rows.length&&!dinero.includes(c)&&c!==fcol});
 const meses=fcol?[...new Set(rows.map(x=>String(x[fcol]||'').slice(0,7)).filter(Boolean))].sort().reverse():[];
-let r=rows.filter(x=>(!s.f||!colF||String(x[colF])===s.f)&&(!s.mes||String(x[fcol]||'').startsWith(s.mes))
- &&(!s.q||Object.values(x).join(' ').toLowerCase().includes(s.q.toLowerCase())));
+// búsqueda flexible: sin tildes, sin mayúsculas, cada palabra puede estar en cualquier columna
+const pal=norm(s.q).split(/\s+/).filter(Boolean);
+const okF=x=>Object.entries(s.fl).every(([c,v])=>!v||String(x[c]??'')===v);
+let r=rows.filter(x=>okF(x)&&(!s.mes||String(x[fcol]||'').startsWith(s.mes))&&(!pal.length||(t=>pal.every(p=>t.includes(p)))(norm(Object.values(x).join(' ')))));
 if(s.sc)r.sort((a,b)=>((a[s.sc]??'')>(b[s.sc]??'')?1:-1)*s.asc);
-const C=t.foto?['Foto',...cols]:cols;
+const C=t.foto?['Foto',...cols]:cols,fc=t.fc;
+const est=v=>/Agotado/.test(v)?' r':/Última/.test(v)?' a':'';
 const cell=(c,v,x)=>c==='Foto'?foto(x[t.foto]):v==null?'':typeof v==='number'&&dinero.includes(c)?fmt(v)
- :/^(Varias|No encontrada)/.test(String(v))?`<span class="chip r">${esc(v)}</span>`:c==='Estado'||c===colF?`<span class="chip${/Agotado/.test(v)?' r':/Última/.test(v)?' a':''}">${esc(v)}</span>`:esc(v);
-const tarjetas=(s.vista||(innerWidth<720?'t':'l'))==='t';
-const hayF=s.q||s.f||s.mes;
+ :/^(Varias|No encontrada)/.test(String(v))?`<span class="chip r">${esc(v)}</span>`:c==='Estado'||c===fc?`<span class="chip${est(v)}">${esc(v)}</span>`:esc(v);
+const modo=s.vista||(t.foto&&(id==='stock')?'g':innerWidth<720?'t':'l');
+const nAct=Object.values(s.fl).filter(Boolean).length,hayF=s.q||s.mes||nAct;
 const nomMes=m=>{const[y,mm]=m.split('-');return['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'][+mm-1]+' '+y};
 const tk=['Descripción','Concepto / Descripción','Alumna','Nombre del Activo','Concepto','Nombre'].find(c=>cols.includes(c))||cols[0];
 const titulo1=x=>esc(x[tk]??'')+(tk==='Nombre'&&x.Apellidos?' '+esc(x.Apellidos):'');
-const lado=x=>dinero.length&&typeof x[dinero[dinero.length-1]]==='number'?`<span style="white-space:nowrap;font-weight:800;color:${id==='gastos'?'var(--bad)':'var(--ok)'}">${fmt(x[dinero[dinero.length-1]])}</span>`:'';
-return `<div class="card"><div class="tb"><input placeholder="🔍 Buscar en ${t.n}…" value="${esc(s.q)}" oninput="S['${id}'].q=this.value;S['${id}'].n=100;repintar('${id}')" id="q">
+const md=dinero.find(c=>/total|valor|precio venta/i.test(c))||dinero[dinero.length-1];
+const lado=x=>md&&typeof x[md]==='number'?`<span class="monto${id==='gastos'?' neg':''}">${fmt(x[md])}</span>`:'';
+const sel=(c)=>{const o=[...new Set(rows.map(x=>x[c]).filter(v=>v!=null&&v!==''))].map(String).sort((a,b)=>a.localeCompare(b,'es',{numeric:true}));
+ return `<label class="fsel"><span>${esc(titulo(c))}</span><select onchange="S['${id}'].fl['${esc(c)}']=this.value;S['${id}'].n=120;pintar()"><option value="">Todos</option>${o.map(v=>`<option ${s.fl[c]===v?'selected':''}>${esc(v)}</option>`).join('')}</select></label>`};
+const vbtn=(k,tx)=>`<button class="seg sm${modo===k?' on':''}" onclick="S['${id}'].vista='${k}';pintar()">${tx}</button>`;
+const galeria=()=>`<div class="gal">${r.slice(0,s.n).map(x=>{const pid=x[t.foto],st=x.Stock;return `<div class="gi">
+<div class="gph">${pid&&F.has(pid)?`<img loading="lazy" src="/foto/${pid}?w=400&v=${F.get(pid)}" onclick="zoom('${pid}','${esc(String(x[tk]||'')).replace(/'/g,'')}')">`:`<div class="noph">👗<small>Sin foto</small></div>`}
+${st!=null?`<span class="badge${st<=0?' r':st==1?' a':''}">${st<=0?'Agotado':st+' en stock'}</span>`:''}${pid?`<span class="code">${esc(pid)}</span>`:''}</div>
+<div class="gb"><b>${titulo1(x)}</b><small>${[x.Talla&&x.Talla!=='-'?'Talla '+esc(x.Talla):'',x.Color&&x.Color!=='-'?esc(x.Color):''].filter(Boolean).join(' · ')}</small>
+<div class="gf">${lado(x)||'<span></span>'}${foto(pid,1)}</div></div></div>`}).join('')||'<p class="mu">Sin resultados con estos filtros.</p>'}</div>`;
+return `<div class="card fade"><div class="tb"><input placeholder="🔍 Busca lo que sea: código, nombre, color, talla…" value="${esc(s.q)}" oninput="S['${id}'].q=this.value;S['${id}'].n=120;repintar('${id}')" id="q">
 ${meses.length?`<select aria-label="Mes" onchange="S['${id}'].mes=this.value;pintar()"><option value="">📅 Todos los meses</option>${meses.map(m=>`<option value="${m}" ${m===s.mes?'selected':''}>${nomMes(m)}</option>`).join('')}</select>`:''}
-${filtrables.length?`<select aria-label="Filtrar por" onchange="S['${id}'].col=this.value;S['${id}'].f='';pintar()">${filtrables.map(c=>`<option value="${esc(c)}" ${c===colF?'selected':''}>Filtrar por: ${esc(titulo(c))}</option>`).join('')}</select>
-<select aria-label="Valor" onchange="S['${id}'].f=this.value;pintar()"><option value="">Todos</option>${opts.map(o=>`<option ${o===s.f?'selected':''}>${esc(o)}</option>`).join('')}</select>`:''}
-</div><div class="res"><span class="chip">${r.length} de ${rows.length} registros</span>${dinero.map(c=>`<span class="chip g">${esc(titulo(c))}: <b>${fmt(sum(r,c))}</b></span>`).join('')}
-<span class="sp"></span>${hayF?`<button class="lnk" onclick="S['${id}']={...S['${id}'],q:'',f:'',mes:''};pintar()">✕ Limpiar filtros</button>`:''}
-<button class="lnk" onclick="S['${id}'].vista='${tarjetas?'l':'t'}';pintar()">${tarjetas?'☰ Ver tabla':'▦ Ver tarjetas'}</button></div>
-${tarjetas?`<div class="cards">${r.slice(0,s.n).map(x=>`<div class="it">${t.foto?`<div class="itf">${foto(x[t.foto])}</div>`:''}<div class="itb"><div style="display:flex;justify-content:space-between;gap:8px"><b>${titulo1(x)}</b>${lado(x)}</div>
+${filtrables.length?`<button class="seg${s.panel||nAct?' on':''}" onclick="S['${id}'].panel=!S['${id}'].panel;pintar()">⚙️ Filtros${nAct?' ('+nAct+')':''}</button>`:''}</div>
+${s.panel?`<div class="fpanel">${filtrables.map(sel).join('')}</div>`:''}
+${nAct?`<div class="act">${Object.entries(s.fl).filter(([c,v])=>v).map(([c,v])=>`<span class="chip g">${esc(titulo(c))}: <b>${esc(v)}</b> <a onclick="S['${id}'].fl['${esc(c)}']='';pintar()">✕</a></span>`).join('')}</div>`:''}
+<div class="res"><span class="chip">${r.length} de ${rows.length}</span>${dinero.map(c=>`<span class="chip g">${esc(titulo(c))}: <b>${fmt(sum(r,c))}</b></span>`).join('')}
+<span class="sp"></span>${hayF?`<button class="lnk" onclick="S['${id}']={...S['${id}'],q:'',fl:{},mes:''};pintar()">✕ Limpiar</button>`:''}
+<span class="segs">${t.foto?vbtn('g','🖼️ Galería'):''}${vbtn('t','▦ Tarjetas')}${vbtn('l','☰ Tabla')}</span></div>
+${modo==='g'&&t.foto?galeria():modo==='t'?`<div class="cards">${r.slice(0,s.n).map(x=>`<div class="it">${t.foto?`<div class="itf">${foto(x[t.foto])}</div>`:''}<div class="itb"><div class="ith"><b>${titulo1(x)}</b>${lado(x)}</div>
 <dl>${C.filter(c=>c!=='Foto').map(c=>x[c]==null||x[c]===''?'':`<div><dt>${esc(titulo(c))}</dt><dd>${cell(c,x[c],x)}</dd></div>`).join('')}</dl></div></div>`).join('')||'<p class="mu">Sin resultados con estos filtros.</p>'}</div>`
 :`<div class="tw"><table><thead><tr>${C.map(c=>`<th onclick="orden('${id}',this.dataset.c)" data-c="${esc(c)}">${esc(titulo(c))}${s.sc===c?(s.asc>0?' ▲':' ▼'):''}</th>`).join('')}</tr></thead>
 <tbody>${r.slice(0,s.n).map(x=>`<tr>${C.map(c=>`<td>${cell(c,x[c],x)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`}
@@ -688,16 +727,20 @@ ${inv>0?`<div class="card" style="margin-bottom:14px"><h3>🎯 Recuperación de 
 ${s.rows.map(r=>`<div class="ln${r.tot?' tot':''}"><div><span>${esc(r.tot?r.t.replace(/^[^(]+/,x=>x[0]+x.slice(1).toLowerCase()):r.t)}</span>${r.nota&&!r.tot?`<small>${esc(r.nota)}</small>`:''}</div>
 <b class="${r.n<0?'neg':r.tot?'':''}">${fmt(r.n)}</b></div>${r.nota&&r.tot?`<small class="nt">${esc(r.nota)}</small>`:''}`).join('')}</div>`).join('')}</div>
 ${intro?`<p class="mu" style="color:#cbd5e1">ℹ️ ${esc(intro)}</p>`:''}`}
-const foto=id=>!id?'':`<span style="display:flex;gap:6px;align-items:center">${F.has(id)?`<img class="av" loading="lazy" src="/foto/${id}?w=120&v=${F.get(id)}" onclick="zoom('${id}')">`:''}<label class="chip" style="cursor:pointer">📷${F.has(id)?'':' Subir'}<input type="file" accept="image/*" hidden onchange="subirFoto('${id}',this.files[0])"></label>${F.has(id)?`<span class="chip r" style="cursor:pointer" onclick="borrarFoto('${id}')">✕</span>`:''}</span>`;
-function zoom(id){const d=document.createElement('div');d.style.cssText='position:fixed;inset:0;background:#000d;display:flex;align-items:center;justify-content:center;z-index:99;cursor:zoom-out;padding:20px';
-d.innerHTML=`<img src="/foto/${id}?v=${F.get(id)}" style="max-width:100%;max-height:100%;border-radius:12px">`;d.onclick=()=>d.remove();document.body.appendChild(d)}
-async function subirFoto(id,f){if(!f)return;toast('Subiendo foto…',60000);const fd=new FormData();fd.append('archivo',f);
-const r=await fetch('/fotos/'+id,{method:'POST',body:fd});if(r.ok){F.set(id,(await r.json()).v);pintar();toast('✅ Foto guardada')}else toast('❌ No se pudo subir la foto')}
+const foto=(id,mini)=>!id?'':`<span class="fbt">${!mini&&F.has(id)?`<img class="av" loading="lazy" src="/foto/${id}?w=120&v=${F.get(id)}" onclick="zoom('${id}')">`:''}
+<label class="chip cam" title="Tomar foto con la cámara">📸<input type="file" accept="image/*" capture="environment" hidden onchange="subirFoto('${id}',this.files[0])"></label>
+<label class="chip" title="Elegir de la galería">🖼️<input type="file" accept="image/*" hidden onchange="subirFoto('${id}',this.files[0])"></label>
+${F.has(id)?`<span class="chip r" title="Borrar foto" onclick="borrarFoto('${id}')">✕</span>`:''}</span>`;
+function zoom(id,tit=''){const d=document.createElement('div');d.className='lb';
+d.innerHTML=`<figure><img src="/foto/${id}?v=${F.get(id)}"><figcaption><b>${esc(id)}</b> ${esc(tit)}</figcaption></figure><button aria-label="Cerrar">✕</button>`;d.onclick=()=>d.remove();document.body.appendChild(d)}
+async function subirFoto(id,f){if(!f)return;const o=document.createElement('div');o.className='lb';o.innerHTML='<div class="sub"><i></i>Subiendo foto…</div>';document.body.appendChild(o);
+try{const fd=new FormData();fd.append('archivo',f);const r=await fetch('/fotos/'+id,{method:'POST',body:fd});const j=await r.json().catch(()=>({}));
+if(r.ok){F.set(id,j.v);pintar();toast('✅ Foto guardada')}else toast('❌ '+(j.detail||'No se pudo subir la foto'),6000)}catch(e){toast('❌ Sin conexión: intenta de nuevo')}finally{o.remove()}}
 async function borrarFoto(id){if(!confirm('¿Borrar esta foto?'))return;const r=await fetch('/fotos/'+id,{method:'DELETE'});if(r.ok){F.delete(id);pintar()}}
 function orden(id,c){const s=S[id];s.asc=s.sc===c?-s.asc:1;s.sc=c;pintar()}
 function repintar(id){const p=$('#q').selectionStart;pintar();const q=$('#q');q.focus();q.setSelectionRange(p,p)}
-function pintar(){$('#nav').innerHTML=Object.entries(T).map(([k,t])=>`<button class="${k===tab?'on':''}" onclick="tab='${k}';pintar()">${t.n}</button>`).join('');
-$('#main').innerHTML=tab==='resumen'?resumen():vista(tab)}
+function pintar(){$('#nav').innerHTML=Object.entries(T).map(([k,t])=>`<button class="${k===tab?'on':''}" onclick="tab='${k}';pintar();scrollTo({top:0,behavior:'smooth'})">${t.n}</button>`).join('');
+$('#main').innerHTML=tab==='resumen'?resumen():vista(tab);$('#nav .on')?.scrollIntoView({inline:'center',block:'nearest'})}
 async function api(u){const r=await fetch(u);if(r.status===401){location.href='/login';throw new Error('Sesión vencida')}
 if(!r.ok)throw new Error((await r.json()).detail);return r.json()}
 async function cargar(){try{D=(await api('/api/datos')).hojas;
