@@ -202,9 +202,29 @@ def datos():
     return JSONResponse({"hojas": leer_excel()})
 
 
+_ping = {}
+
+
+def prueba_nube():
+    """Comprueba con Cloudinary si el API Key y el API Secret son correctos (sin mostrarlos)."""
+    if not USA_CLOUD:
+        return None
+    if time.time() - _ping.get("t", 0) < 300:
+        return _ping["r"]
+    try:
+        r = _http("GET", f"https://api.cloudinary.com/v1_1/{CLD[0]}/ping", auth=(CLD[1], CLD[2]), timeout=20)
+        res = {"ok": r.ok, "codigo": r.status_code, "detalle": "" if r.ok else r.text[:160]}
+    except Exception as e:
+        res = {"ok": False, "codigo": 0, "detalle": str(e)[:160]}
+    # pistas para comparar con Cloudinary sin revelar la clave completa
+    res.update(cloud=CLD[0], key_final=CLD[1][-4:], secret_largo=len(CLD[2]), secret_final=CLD[2][-3:])
+    _ping.update(t=time.time(), r=res)
+    return res
+
+
 @app.get("/api/estado")
 def estado():
-    return {"memoria": "nube" if USA_CLOUD else "temporal", "clave": bool(CLAVE), **_estado,
+    return {"memoria": "nube" if USA_CLOUD else "temporal", "clave": bool(CLAVE), "nube": prueba_nube(), **_estado,
             "excel_modificado": dt.datetime.fromtimestamp(os.path.getmtime(EXCEL_PATH)).strftime("%Y-%m-%d %H:%M")
             if os.path.exists(EXCEL_PATH) else None}
 
@@ -411,7 +431,7 @@ def manifest():
 @app.get("/sw.js")
 def sw():
     # Guarda la última versión de la app y de los datos: si no hay internet, abre con lo último que vio.
-    js = """const C='rojas-v17';
+    js = """const C='rojas-v18';
 self.addEventListener('install',e=>self.skipWaiting());
 self.addEventListener('activate',e=>e.waitUntil(caches.keys().then(k=>Promise.all(k.filter(x=>x!==C).map(x=>caches.delete(x))))));
 self.addEventListener('fetch',e=>{const u=new URL(e.request.url);
@@ -517,7 +537,7 @@ table.bal .tt td{font-weight:800;border-top:2px solid var(--tx);background:#f8fa
 if('serviceWorker'in navigator)navigator.serviceWorker.register('/sw.js');
 const T={resumen:{n:'📊 Resumen'},bal:{n:'💰 Balance'},alumnas:{n:'🎓 Alumnas',kw:'alumnas',req:'Nombre',fc:'Estado',foto:'ID Alumna'},
 ingresos:{n:'🤸 Ingresos',kw:'ingresos',req:'Alumna',fc:'Tipo'},gastos:{n:'💸 Gastos',kw:'gastos',req:'Valor ($)',fc:'Categoría'},
-stock:{n:'👗 Catálogo',kw:'catálogo',req:'Código',fc:'Estado',foto:'Código',orden:['Código','Descripción','Talla','Color','Stock','Estado','Precio venta ($)']},merc:{n:'📦 Entradas',kw:['mercancia','marcancia'],req:'Código Prenda',fc:'Clasificación',foto:'ID Entrada'},
+stock:{n:'👗 Catálogo',kw:'catálogo',req:'Código',fc:'Estado',foto:'Código',orden:['Código','Descripción','Talla','Color','Stock','Estado','Precio venta ($)']},merc:{n:'📦 Mercancía',kw:['mercancia','marcancia'],req:'Código Prenda',fc:'Clasificación',foto:'Código Prenda'},
 activos:{n:'🏢 Activos',kw:'activos',req:'Nombre del Activo',fc:'Estado'},ventas:{n:'🛒 Ventas',kw:'ventas',req:'Código Prenda',fc:'Método Pago'},
 cont:{n:'📑 Contable',kw:'contable'}};
 // Columnas de apoyo del Excel que no se muestran en la app
@@ -683,7 +703,8 @@ if(!r.ok)throw new Error((await r.json()).detail);return r.json()}
 async function cargar(){try{D=(await api('/api/datos')).hojas;
 try{F=new Map(Object.entries(await api('/api/fotos')))}catch(e){}
 try{const e=await api('/api/estado');$('#salir').hidden=!e.clave;
-$('#mem').innerHTML=e.memoria==='nube'?'<span class="mem ok">☁️ Memoria permanente activa</span>'
+$('#mem').innerHTML=e.memoria==='nube'&&e.nube&&!e.nube.ok?`<span class="mem no" title="${esc(e.nube.detalle)}">⚠️ Cloudinary rechaza la clave · cloud: ${esc(e.nube.cloud)} · key termina en ${esc(e.nube.key_final)} · secret de ${e.nube.secret_largo} caracteres, termina en ${esc(e.nube.secret_final)}</span>`
+:e.memoria==='nube'?'<span class="mem ok">☁️ Memoria permanente activa</span>'
 :'<span class="mem no" title="Sin Cloudinary: las fotos y el Excel que subas se borran cuando Render reinicia la app.">⚠️ Memoria temporal</span>';
 $('#sub').textContent='Inventario, alumnas y finanzas · Excel del '+(e.excel_modificado||'—')}catch(e){}
 pintar()}catch(e){$('#main').innerHTML='<div class="card">⚠️ '+esc(e.message)+'</div>'}}
