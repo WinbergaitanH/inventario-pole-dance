@@ -30,15 +30,53 @@ _estado = {"excel_origen": "local", "excel_fecha": None}
 
 
 # =====================================================================  Cloudinary
+# Conexión con la librería estándar de Python (no depende de "requests").
+import json as _json, base64 as _b64, uuid as _uuid, urllib.request as _ur, urllib.parse as _up, urllib.error as _ue
+
+
+class _Resp:
+    def __init__(self, status, body):
+        self.status_code, self.content = status, body
+        self.ok = 200 <= status < 300
+        self.text = body.decode("utf-8", "replace")
+
+    def json(self):
+        return _json.loads(self.content)
+
+
+def _http(metodo, url, params=None, data=None, files=None, auth=None, timeout=60):
+    if params:
+        url += "?" + _up.urlencode(params)
+    headers, body = {}, None
+    if files:
+        limite = _uuid.uuid4().hex
+        partes = []
+        for k, v in (data or {}).items():
+            partes.append(f'--{limite}\r\nContent-Disposition: form-data; name="{k}"\r\n\r\n{v}\r\n'.encode())
+        for k, (nombre, contenido) in files.items():
+            partes.append(f'--{limite}\r\nContent-Disposition: form-data; name="{k}"; filename="{nombre}"\r\n'
+                          f'Content-Type: application/octet-stream\r\n\r\n'.encode() + contenido + b"\r\n")
+        body = b"".join(partes) + f"--{limite}--\r\n".encode()
+        headers["Content-Type"] = f"multipart/form-data; boundary={limite}"
+    elif data is not None:
+        body = _up.urlencode(data).encode()
+        headers["Content-Type"] = "application/x-www-form-urlencoded"
+    if auth:
+        headers["Authorization"] = "Basic " + _b64.b64encode(f"{auth[0]}:{auth[1]}".encode()).decode()
+    req = _ur.Request(url, data=body, headers=headers, method=metodo)
+    try:
+        with _ur.urlopen(req, timeout=timeout) as r:
+            return _Resp(r.status, r.read())
+    except _ue.HTTPError as e:
+        return _Resp(e.code, e.read())
 def _firma(params):
     base = "&".join(f"{k}={v}" for k, v in sorted(params.items()))
     return hashlib.sha1((base + CLD[2]).encode()).hexdigest()
 
 
 def _cld_post(tipo, accion, params, files=None):
-    import requests
     params = {**params, "timestamp": int(time.time())}
-    r = requests.post(f"https://api.cloudinary.com/v1_1/{CLD[0]}/{tipo}/{accion}",
+    r = _http("POST", f"https://api.cloudinary.com/v1_1/{CLD[0]}/{tipo}/{accion}",
                       data={**params, "api_key": CLD[1], "signature": _firma(params)}, files=files, timeout=60)
     if not r.ok:
         raise HTTPException(502, "Error con Cloudinary: " + r.text[:200])
@@ -59,14 +97,13 @@ def excel_desde_nube():
     """Al arrancar, trae el último Excel guardado en Cloudinary (si existe)."""
     if not USA_CLOUD:
         return
-    import requests
     try:
-        r = requests.get(f"https://api.cloudinary.com/v1_1/{CLD[0]}/resources/raw/upload/{EXCEL_CLD}/actual.xlsx",
+        r = _http("GET", f"https://api.cloudinary.com/v1_1/{CLD[0]}/resources/raw/upload/{EXCEL_CLD}/actual.xlsx",
                          auth=(CLD[1], CLD[2]), timeout=30)
         if not r.ok:
             return  # todavía no se ha subido ningún Excel: se usa el del repositorio
         info = r.json()
-        x = requests.get(info["secure_url"], timeout=60)  # URL con versión: siempre la última
+        x = _http("GET", info["secure_url"], timeout=60)  # URL con versión: siempre la última
         if x.ok and x.content[:2] == b"PK":
             with open(EXCEL_PATH, "wb") as f:
                 f.write(x.content)
@@ -222,14 +259,17 @@ def _jpeg(data: bytes) -> bytes:
 @app.get("/api/fotos")
 def lista_fotos():
     if USA_CLOUD:
-        import requests
         ids, cursor = {}, None
         while True:
             p = {"prefix": "polesport/", "max_results": 500}
             if cursor:
                 p["next_cursor"] = cursor
-            r = requests.get(f"https://api.cloudinary.com/v1_1/{CLD[0]}/resources/image/upload",
-                             params=p, auth=(CLD[1], CLD[2]), timeout=30)
+            try:
+                r = _http("GET", f"https://api.cloudinary.com/v1_1/{CLD[0]}/resources/image/upload",
+                          params=p, auth=(CLD[1], CLD[2]), timeout=30)
+            except Exception as e:
+                print("No se pudo listar fotos:", e)
+                return ids
             if not r.ok:
                 return ids
             j = r.json()
