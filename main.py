@@ -1,4 +1,4 @@
-"""Pole Dance Rojas Sport — panel de inventario, alumnas y finanzas (v11).
+"""Pole Dance Rojas Sport — panel de inventario, alumnas y finanzas (v12).
 
 Variables de entorno (en Render → Environment):
   APP_CLAVE              Clave para entrar a la app (si no existe, la app queda abierta).
@@ -120,7 +120,7 @@ async def inicio(app):
     excel_desde_nube()
     yield
 
-app = FastAPI(title="Pole Dance Rojas Sport", version="11.0.0", lifespan=inicio)
+app = FastAPI(title="Pole Dance Rojas Sport", version="12.0.0", lifespan=inicio)
 
 
 # =====================================================================  Clave de acceso
@@ -431,7 +431,7 @@ def manifest():
 @app.get("/sw.js")
 def sw():
     # Guarda la última versión de la app y de los datos: si no hay internet, abre con lo último que vio.
-    js = """const C='rojas-v19';
+    js = """const C='rojas-v20';
 self.addEventListener('install',e=>self.skipWaiting());
 self.addEventListener('activate',e=>e.waitUntil(caches.keys().then(k=>Promise.all(k.filter(x=>x!==C).map(x=>caches.delete(x))))));
 self.addEventListener('fetch',e=>{const u=new URL(e.request.url);
@@ -552,6 +552,31 @@ table.bal .tt td{font-weight:800;border-top:2px solid var(--tx);background:#f8fa
 @keyframes gira{to{transform:rotate(360deg)}}
 tbody tr:nth-child(even) td{background:#fafbff}nav button{transition:.2s}nav button:hover:not(.on){color:#fff;background:#ffffff14}
 .card{transition:box-shadow .2s}.br{transition:background .15s}
+.chartw{overflow-x:auto;-webkit-overflow-scrolling:touch}
+.combo .bar{transform-box:fill-box;transform-origin:bottom;animation:crece .6s cubic-bezier(.2,.8,.2,1) both}@keyframes crece{from{transform:scaleY(0)}}
+.cg{cursor:pointer}.cg .hov{fill:transparent;transition:.15s}.cg:hover .hov{fill:#eef2ff}
+.ln{stroke-dasharray:4000;stroke-dashoffset:4000;animation:traza 1.2s ease forwards}@keyframes traza{to{stroke-dashoffset:0}}
+.ley{display:flex;flex-wrap:wrap;gap:14px;font-size:.75rem;color:var(--mu);margin-top:8px}.ley i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:5px;vertical-align:middle}
+.motiva{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:10px;margin-bottom:14px}
+.motiva div{display:flex;gap:10px;align-items:center;background:linear-gradient(135deg,#fff,#f0fdf4);border-radius:16px;padding:12px 14px;box-shadow:0 10px 30px -8px #0006;animation:fd .4s ease both}
+.motiva span{font-size:1.5rem}.motiva p{font-size:.85rem;line-height:1.35}
+.ctl{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.rec{position:relative;height:26px;border-radius:13px;background:#e2e8f0;overflow:hidden;margin-bottom:14px}.rec i{display:block;height:100%;background:linear-gradient(90deg,#22a94b,#1e3a8a);border-radius:13px;animation:llena 1s ease both}
+.rec b{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:.8rem;color:#fff;text-shadow:0 1px 2px #000a}@keyframes llena{from{width:0}}
+.logros{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}.logros div{background:#f8fafc;border:1px solid #e2e8f0;border-radius:14px;padding:12px;display:flex;flex-direction:column;gap:2px}
+.logros span{font-size:1.3rem}.logros b{font-size:1.05rem}.logros small{color:var(--mu);font-size:.72rem}
+.meses{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:12px}
+.mc{background:#fff;border-radius:18px;padding:16px;box-shadow:0 10px 30px -8px #0006;border-top:5px solid var(--ok);cursor:pointer;transition:.2s;animation:fd .3s ease both}.mc:hover{transform:translateY(-3px)}.mc.neg-b{border-top-color:var(--bad)}
+.mch{display:flex;gap:8px;align-items:center;margin-bottom:10px}.mch b{text-transform:capitalize;flex:1}
+.mcb{display:grid;grid-template-columns:62px 1fr auto;gap:8px;align-items:center;font-size:.78rem;margin:5px 0}.mcb i{display:block;height:10px;border-radius:5px;min-width:3px}.mcb em{font-style:normal;font-weight:700}
+.mcf{display:flex;justify-content:space-between;gap:8px;margin-top:10px;padding-top:10px;border-top:1px dashed #e2e8f0}.mcf small{display:block;color:var(--mu);font-size:.68rem}
+.gv{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(300px,1fr))}.pz{border:1px solid #e2e8f0;border-radius:14px;padding:14px;background:#fff;min-width:0}.pz.full{grid-column:1/-1}
+.pz h3{font-size:.95rem;display:flex;flex-wrap:wrap;gap:6px;align-items:center}.gsel{padding:4px 8px;border:1.5px solid #cbd5e1;border-radius:10px;font-weight:700;font-size:.85rem;background:#f8fafc}
+.tips{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}.tips span{background:#f8fafc;border:1px solid #e2e8f0;border-radius:20px;padding:5px 12px;font-size:.78rem}
+.dona{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:center}.dona circle{transition:stroke-width .2s}.dona circle:hover{stroke-width:32}
+.dl{flex:1;min-width:170px;display:grid;gap:4px}.dl div{display:grid;grid-template-columns:12px 1fr auto auto;gap:8px;align-items:center;font-size:.8rem;padding:4px 6px;border-radius:8px}
+.dl .cl{cursor:pointer}.dl .cl:hover{background:#f0fdf4}.dl i{width:12px;height:12px;border-radius:4px}.dl span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+@media (prefers-reduced-motion:reduce){.ln{stroke-dasharray:none!important;stroke-dashoffset:0!important}}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 #toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#0f172a;color:#fff;padding:12px 18px;border-radius:14px;font-size:.9rem;z-index:100;display:none;box-shadow:0 10px 30px #0008}
 </style></head><body><div class="w">
@@ -656,12 +681,85 @@ ${s.panel?`<div class="fpanel">${filtrables.map(sel).join('')}</div>`:''}
 ${nAct?`<div class="act">${Object.entries(s.fl).filter(([c,v])=>v).map(([c,v])=>`<span class="chip g">${esc(titulo(c))}: <b>${esc(v)}</b> <a onclick="S['${id}'].fl['${esc(c)}']='';pintar()">✕</a></span>`).join('')}</div>`:''}
 <div class="res"><span class="chip">${r.length} de ${rows.length}</span>${dinero.map(c=>`<span class="chip g">${esc(titulo(c))}: <b>${fmt(sum(r,c))}</b></span>`).join('')}
 <span class="sp"></span>${hayF?`<button class="lnk" onclick="S['${id}']={...S['${id}'],q:'',fl:{},mes:''};pintar()">✕ Limpiar</button>`:''}
-<span class="segs">${t.foto?vbtn('g','🖼️ Galería'):''}${vbtn('t','▦ Tarjetas')}${vbtn('l','☰ Tabla')}</span></div>
-${modo==='g'&&t.foto?galeria():modo==='t'?`<div class="cards">${r.slice(0,s.n).map(x=>`<div class="it">${t.foto?`<div class="itf">${foto(x[t.foto])}</div>`:''}<div class="itb"><div class="ith"><b>${titulo1(x)}</b>${lado(x)}</div>
+<span class="segs">${vbtn('gr','📊 Gráfico')}${t.foto?vbtn('g','🖼️ Galería'):''}${vbtn('t','▦ Tarjetas')}${vbtn('l','☰ Tabla')}</span></div>
+${modo==='gr'?grafVista(id,r,fcol,md,filtrables,tk,s):modo==='g'&&t.foto?galeria():modo==='t'?`<div class="cards">${r.slice(0,s.n).map(x=>`<div class="it">${t.foto?`<div class="itf">${foto(x[t.foto])}</div>`:''}<div class="itb"><div class="ith"><b>${titulo1(x)}</b>${lado(x)}</div>
 <dl>${C.filter(c=>c!=='Foto').map(c=>x[c]==null||x[c]===''?'':`<div><dt>${esc(titulo(c))}</dt><dd>${cell(c,x[c],x)}</dd></div>`).join('')}</dl></div></div>`).join('')||'<p class="mu">Sin resultados con estos filtros.</p>'}</div>`
 :`<div class="tw"><table><thead><tr>${C.map(c=>`<th onclick="orden('${id}',this.dataset.c)" data-c="${esc(c)}">${esc(titulo(c))}${s.sc===c?(s.asc>0?' ▲':' ▼'):''}</th>`).join('')}</tr></thead>
 <tbody>${r.slice(0,s.n).map(x=>`<tr>${C.map(c=>`<td>${cell(c,x[c],x)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`}
 ${r.length>s.n?`<button class="more" onclick="S['${id}'].n+=200;pintar()">Ver más (${r.length-s.n} restantes)</button>`:''}</div>`}
+// ---- Gráficas (v12): ayudas comunes ----
+const MESES=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+const mesC=m=>{const[y,mm]=String(m).split('-');return MESES[+mm-1]+' '+y.slice(2)};
+const mesL=m=>{const[y,mm]=String(m).split('-');return['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'][+mm-1]+' '+y};
+const hoyM=()=>{const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')};
+const cmp=v=>{const a=Math.abs(v||0),s=v<0?'-':'';return a>=1e6?s+'$'+(a/1e6).toFixed(1).replace('.',',')+' M':a>=1e3?s+'$'+Math.round(a/1e3)+' mil':s+'$'+Math.round(a)};
+const pctTxt=p=>(p>0?'+':'')+p.toFixed(0)+'%';
+const PAL=['#22a94b','#1e3a8a','#f59e0b','#ef4444','#8b5cf6','#06b6d4','#ec4899','#94a3b8'];
+let _gid=0;
+function irMes(m){tab='bal';S.balm=m;pintar();setTimeout(()=>{const d=document.getElementById('detmes');if(d)d.scrollIntoView({behavior:'smooth',block:'start'})},60)}
+function fil(id,c,v){const s=S[id];s.fl[c]=v;s.n=120;pintar()}
+// Barras dobles entradas/gastos por mes, con balance del mes arriba y 🏆 en el mejor mes
+function combo(L,G,B,click){const n=L.length;if(!n)return '<p class="mu">Sin movimientos con fecha.</p>';
+const k='c'+(++_gid),st=Math.max(64,Math.min(120,Math.floor(900/n))),W=n*st+56,H=284,T=48,P=186,base=T+P;
+const mx=Math.max(...L.map(x=>Math.max(x.e,x[G])),1),bw=Math.max(10,Math.min(24,st/3.4)),cx=i=>52+i*st+st/2,y=v=>base-Math.max(0,v)/mx*P;
+const best=L.reduce((a,x)=>x[B]>a[B]?x:a,L[0]),hoy=hoyM();
+const grid=[0,.25,.5,.75,1].map(f=>`<line x1="48" x2="${W}" y1="${y(mx*f)}" y2="${y(mx*f)}" stroke="#e2e8f0" ${f?'stroke-dasharray="3 4"':''}/><text x="44" y="${y(mx*f)+4}" font-size="10" text-anchor="end" fill="#94a3b8">${cmp(mx*f)}</text>`).join('');
+return `<div class="chartw"><svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" class="combo" role="img" aria-label="Entradas y gastos por mes">
+<defs><linearGradient id="${k}e" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#4ade80"/><stop offset="1" stop-color="#15803d"/></linearGradient>
+<linearGradient id="${k}g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fca5a5"/><stop offset="1" stop-color="#dc2626"/></linearGradient></defs>${grid}
+${L.map((x,i)=>{const c=cx(i),b=x[B],cur=x.m===hoy;return `<g class="cg"${click?` onclick="${click}('${x.m}')"`:''}><title>${mesL(x.m)}${cur?' (en curso)':''}
+Entradas: ${fmt(x.e)}
+Gastos: ${fmt(x[G])}
+Balance: ${fmt(b)}</title>
+<rect class="hov" x="${c-st/2+3}" y="6" width="${st-6}" height="${H-10}" rx="10"/>
+<rect class="bar" x="${c-bw-2}" y="${y(x.e)}" width="${bw}" height="${base-y(x.e)}" rx="5" fill="url(#${k}e)" style="animation-delay:${i*45}ms"/>
+<rect class="bar" x="${c+2}" y="${y(x[G])}" width="${bw}" height="${base-y(x[G])}" rx="5" fill="url(#${k}g)" style="animation-delay:${i*45+25}ms"/>
+<rect x="${c-st/2+6}" y="12" width="${st-12}" height="22" rx="11" fill="${b<0?'#fee2e2':'#dcfce7'}"/>
+<text x="${c}" y="27" font-size="10.5" font-weight="800" text-anchor="middle" fill="${b<0?'#b91c1c':'#15803d'}">${b<0?'▼':'▲'} ${cmp(b)}</text>
+${x===best&&b>0?`<text x="${c}" y="${base+21}" font-size="15" text-anchor="middle">🏆</text>`:''}
+<text x="${c}" y="${H-8}" font-size="11" text-anchor="middle" fill="${cur?'#1e3a8a':'#64748b'}" font-weight="${cur?800:500}">${mesC(x.m)}${cur?' •':''}</text></g>`}).join('')}</svg></div>
+<div class="ley"><span><i style="background:#22c55e"></i>Entradas</span><span><i style="background:#ef4444"></i>Gastos</span><span><b class="pos">▲</b> / <b class="neg">▼</b> balance del mes</span><span>🏆 mejor mes</span><span>• mes en curso</span></div>`}
+// Línea de acumulado con área sombreada
+function acumulado(L,A){const n=L.length,st=Math.max(64,Math.min(120,Math.floor(900/n))),W=n*st+56,H=220,T=30,P=150,k='a'+(++_gid);
+const vals=L.map(x=>x[A]),lo=Math.min(0,...vals),hi=Math.max(0,...vals),rg=(hi-lo)||1,cx=i=>52+i*st+st/2,y=v=>T+(hi-v)/rg*P,z=y(0);
+const line=L.map((x,i)=>cx(i)+','+y(x[A])).join(' ');
+return `<div class="chartw"><svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-label="Acumulado"><defs><linearGradient id="${k}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3b82f6" stop-opacity=".35"/><stop offset="1" stop-color="#3b82f6" stop-opacity="0"/></linearGradient></defs>
+<line x1="48" x2="${W}" y1="${z}" y2="${z}" stroke="#94a3b8" stroke-dasharray="4 4"/><text x="44" y="${z+4}" font-size="10" text-anchor="end" fill="#64748b">$0</text>
+<polygon points="${cx(0)},${z} ${line} ${cx(n-1)},${z}" fill="url(#${k})"/><polyline class="ln" points="${line}" fill="none" stroke="#1e3a8a" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+${L.map((x,i)=>`<circle cx="${cx(i)}" cy="${y(x[A])}" r="6" fill="${x[A]<0?'#ef4444':'#22a94b'}" stroke="#fff" stroke-width="2"><title>${mesL(x.m)}: ${fmt(x[A])}</title></circle><text x="${cx(i)}" y="${y(x[A])-12}" font-size="10.5" text-anchor="middle" fill="#1e1b4b" font-weight="700">${cmp(x[A])}</text><text x="${cx(i)}" y="${H-6}" font-size="11" text-anchor="middle" fill="#64748b">${mesC(x.m)}</text>`).join('')}</svg></div>`}
+// Barras verticales por mes (una serie) con línea de promedio
+function barrasV(it,money,id){const n=it.length,st=Math.max(56,Math.min(110,Math.floor(880/n))),W=n*st+56,H=236,T=30,P=164,base=T+P,k='v'+(++_gid);
+const mx=Math.max(...it.map(x=>x[1]),1),y=v=>base-Math.max(0,v)/mx*P,cx=i=>52+i*st+st/2,bw=Math.min(34,st*.55),best=it.reduce((a,x)=>x[1]>a[1]?x:a,it[0]),hoy=hoyM(),prom=it.reduce((s,x)=>s+x[1],0)/n;
+const f=v=>money?cmp(v):String(Math.round(v));
+return `<div class="chartw"><svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" class="combo" role="img" aria-label="Por mes"><defs><linearGradient id="${k}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#22a94b"/><stop offset="1" stop-color="#1e3a8a"/></linearGradient></defs>
+${[0,.5,1].map(g=>`<line x1="48" x2="${W}" y1="${y(mx*g)}" y2="${y(mx*g)}" stroke="#e2e8f0" ${g?'stroke-dasharray="3 4"':''}/><text x="44" y="${y(mx*g)+4}" font-size="10" text-anchor="end" fill="#94a3b8">${f(mx*g)}</text>`).join('')}
+${it.map(([m,v],i)=>{const cur=m===hoy;return `<g class="cg" onclick="S['${id}'].mes='${m}';S['${id}'].n=120;pintar()"><title>${mesL(m)}: ${money?fmt(v):v}</title>
+<rect class="hov" x="${cx(i)-st/2+3}" y="4" width="${st-6}" height="${H-8}" rx="10"/>
+<rect class="bar" x="${cx(i)-bw/2}" y="${y(v)}" width="${bw}" height="${base-y(v)}" rx="6" fill="url(#${k})" style="animation-delay:${i*45}ms"/>
+<text x="${cx(i)}" y="${y(v)-6}" font-size="10.5" font-weight="700" text-anchor="middle" fill="#1e1b4b">${f(v)}</text>
+${m===best[0]&&id!=='gastos'&&id!=='merc'?`<text x="${cx(i)}" y="${base+20}" font-size="14" text-anchor="middle">🏆</text>`:''}
+<text x="${cx(i)}" y="${H-6}" font-size="11" text-anchor="middle" fill="${cur?'#1e3a8a':'#64748b'}" font-weight="${cur?800:500}">${mesC(m)}${cur?' •':''}</text></g>`}).join('')}
+<line x1="48" x2="${W}" y1="${y(prom)}" y2="${y(prom)}" stroke="#f59e0b" stroke-width="1.5" stroke-dasharray="6 4"/><text x="52" y="${y(prom)-5}" font-size="10" text-anchor="start" fill="#b45309" font-weight="700">promedio ${f(prom)}</text></svg></div>`}
+function tendencia(it,money,malo){if(it.length<2)return '';const[m1,v1]=it[it.length-1],[m0,v0]=it[it.length-2],d=v0?(v1-v0)/v0*100:null,cur=m1===hoyM();
+const best=it.reduce((a,x)=>x[1]>a[1]?x:a,it[0]),bien=d!=null&&((d>=0)!==!!malo);
+return `<div class="tips">${d!=null?`<span>${d>=0?'📈':'📉'} ${mesL(m1)}${cur?' (en curso)':''}: <b class="${bien?'pos':'neg'}">${pctTxt(d)}</b> vs ${mesL(m0)}</span>`:''}<span>${malo?'🔎':'🏆'} Mes más alto: <b>${mesL(best[0])}</b> (${money?fmt(best[1]):best[1]})</span></div>`}
+// Dona con porcentajes; tocar una categoría la filtra
+function dona(g,money,id,col){const sum=g.reduce((s,x)=>s+x[1],0),tot=sum||1;let it=g.slice(0,6);const resto=g.slice(6).reduce((s,x)=>s+x[1],0);if(resto>0)it=[...it,['Otros',resto]];
+const R=62,C=2*Math.PI*R;let acc=0;
+const segs=it.map(([k,v],i)=>{const len=Math.max(0,v)/tot*C,s=`<circle r="${R}" cx="90" cy="90" fill="none" stroke="${PAL[i%PAL.length]}" stroke-width="26" stroke-dasharray="${len} ${C-len}" stroke-dashoffset="${-acc}" transform="rotate(-90 90 90)"><title>${esc(k)}: ${money?fmt(v):v} (${(v/tot*100).toFixed(1)}%)</title></circle>`;acc+=len;return s}).join('');
+return `<div class="dona"><svg viewBox="0 0 180 180" width="170" height="170" role="img" aria-label="Distribución">${segs}<text x="90" y="86" text-anchor="middle" font-size="12" fill="#64748b">Total</text><text x="90" y="105" text-anchor="middle" font-size="15" font-weight="800" fill="#1e1b4b">${money?cmp(sum):sum}</text></svg>
+<div class="dl">${it.map(([k,v],i)=>{const ok=!(resto>0&&i===it.length-1)&&k!=='(sin dato)';return `<div${ok?` class="cl" onclick="fil('${id}',this.dataset.c,this.dataset.k)" data-c="${esc(col)}" data-k="${esc(k)}"`:''}><i style="background:${PAL[i%PAL.length]}"></i><span title="${esc(k)}">${esc(k)}</span><small class="mu" style="margin:0">${money?cmp(v):v}</small><b>${(v/tot*100).toFixed(0)}%</b></div>`}).join('')}</div></div>`}
+function barrasF(items,id,col,money){const mx=Math.max(...items.map(i=>i[1]),1);
+return items.slice(0,10).map(([k,v],i)=>`<div class="br"${k!=='(sin dato)'?` onclick="fil('${id}',this.dataset.c,this.dataset.k)" data-c="${esc(col)}" data-k="${esc(k)}"`:''}><span title="${esc(k)}">${i<3?['🥇','🥈','🥉'][i]+' ':''}${esc(k)}</span><i style="width:${v/mx*45}%"></i><em>${money?fmt(v):v}</em></div>`).join('')||'<p class="mu">Sin datos</p>'}
+// Vista "📊 Gráfico" para cualquier pestaña de lista (respeta búsqueda y filtros)
+function grafVista(id,r,fcol,md,filtrables,tk,s){if(!r.length)return '<p class="mu">Sin resultados con estos filtros.</p>';
+const fc=T[id].fc,gc=filtrables.includes(s.gcol)?s.gcol:filtrables.includes(fc)?fc:filtrables[0],malo=id==='gastos'||id==='merc',P=[];
+if(fcol){const M={};r.forEach(x=>{const m=String(x[fcol]||'').slice(0,7);if(/^\d{4}-\d{2}$/.test(m))M[m]=(M[m]||0)+(md?num(x[md]):1)});
+ const it=Object.keys(M).sort().map(m=>[m,M[m]]);
+ if(it.length)P.push(`<div class="pz full"><h3>📅 ${md?esc(titulo(md)):'Registros'} por mes <small class="mu">(toca un mes para filtrarlo)</small></h3>${barrasV(it,!!md,id)}${tendencia(it,!!md,malo)}</div>`)}
+if(gc)P.push(`<div class="pz"><h3>🍩 Distribución por <select class="gsel" onchange="S['${id}'].gcol=this.value;pintar()">${filtrables.map(c=>`<option value="${esc(c)}" ${c===gc?'selected':''}>${esc(titulo(c))}</option>`).join('')}</select></h3>${dona(group(r,gc,md),!!md,id,gc)}</div>`);
+if(tk&&tk!==gc)P.push(`<div class="pz"><h3>🏅 Top por ${esc(titulo(tk))}${md?` <small class="mu">(${esc(titulo(md))})</small>`:''}</h3>${barrasF(group(r,tk,md),id,tk,!!md)}</div>`);
+return `<div class="gv">${P.join('')||'<p class="mu">No hay columnas para graficar.</p>'}</div>`}
 // ---- Balance mes a mes: operativo vs total; la inversión inicial se muestra aparte y no se resta ----
 function balance(){const M={},add=(m,k,v)=>{if(!m||!v)return;(M[m]??={cl:0,ve:0,op:0,rep:0,pre:0,otr:0,inv:0})[k]+=v};
 const mes=v=>String(v||'').slice(0,7),INV=/inversi[oó]n inicial/i;
@@ -673,28 +771,46 @@ tabla('activos').rows.forEach(r=>add(mes(r['Fecha Adquisición']),INV.test(Strin
 const ms=Object.keys(M).sort();let aO=0,aT=0;
 const L=ms.map(m=>{const x=M[m],e=x.cl+x.ve,gO=x.op+x.rep,gT=gO+x.pre+x.otr;aO+=e-gO;aT+=e-gT;return{m,...x,e,gO,gT,bO:e-gO,bT:e-gT,aO,aT}});
 if(!L.length)return '<div class="card">No hay movimientos con fecha.</div>';
-const v=S.balv||'tot',G=v==='op'?'gO':'gT',B=v==='op'?'bO':'bT',A=v==='op'?'aO':'aT';
-const nomMes=m=>{const[y,mm]=m.split('-');return['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'][+mm-1]+' '+y.slice(2)};
-const tot=k=>L.reduce((s,x)=>s+x[k],0),mx=Math.max(...L.map(x=>Math.max(x.e,x[G])),1);
-const st=Math.max(90,Math.floor(1000/L.length)),W=Math.max(L.length*st+40,300),H=210,vals=L.map(x=>x[A]),aMin=Math.min(0,...vals),aMax=Math.max(0,...vals),rg=(aMax-aMin)||1;
-const px=i=>50+i*st,py=y=>30+(aMax-y)/rg*(H-70),Mf=y=>(y<0?'-':'')+'$'+(Math.abs(y)/1e6).toFixed(1).replace('.',',')+' M';
-const svg=`<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-label="Acumulado"><line x1="0" x2="${W}" y1="${py(0)}" y2="${py(0)}" stroke="#94a3b8" stroke-dasharray="4 4"/><text x="4" y="${py(0)-5}" font-size="10" fill="#64748b">$0</text>
-<polyline fill="none" stroke="#1e3a8a" stroke-width="3" points="${L.map((x,i)=>px(i)+','+py(x[A])).join(' ')}"/>
-${L.map((x,i)=>`<circle cx="${px(i)}" cy="${py(x[A])}" r="5" fill="${x[A]<0?'#ef4444':'#22a94b'}"/><text x="${px(i)}" y="${py(x[A])-11}" font-size="10.5" text-anchor="middle" fill="#1e1b4b" font-weight="700">${Mf(x[A])}</text><text x="${px(i)}" y="${H-4}" font-size="11" text-anchor="middle" fill="#64748b">${nomMes(x.m)}</text>`).join('')}</svg>`;
-const K=(t,val,c,sub)=>`<div class="card kpi" style="cursor:default"><h4>${t}</h4><b class="${c}">${fmt(val)}</b><small class="mu" style="display:block">${sub}</small></div>`;
+const v=S.balv||'tot',G=v==='op'?'gO':'gT',B=v==='op'?'bO':'bT',A=v==='op'?'aO':'aT',modo=S.balmodo||'g';
+const tot=k=>L.reduce((s,x)=>s+x[k],0),n=L.length,ult=L[n-1],ant=L[n-2],hoy=hoyM(),enCurso=ult.m===hoy;
+const best=L.reduce((a,x)=>x[B]>a[B]?x:a,L[0]),bestE=L.reduce((a,x)=>x.e>a.e?x:a,L[0]);
+let racha=0;for(let i=n-1;i>=0&&L[i][B]>=0;i--)racha++;
+const pos=L.filter(x=>x[B]>=0).length,inv=tot('inv'),rec=inv>0?Math.max(0,Math.min(100,ult.aO/inv*100)):0,dE=ant&&ant.e?(ult.e-ant.e)/ant.e*100:null;
+// mensajes que motivan, calculados con los datos reales
+const msj=[];
+if(racha>=2)msj.push(['🔥',`¡Llevas <b>${racha} meses seguidos</b> en positivo!`]);
+else if(ult[B]>=0)msj.push(['✅',`${mesL(ult.m)} va en positivo: <b class="pos">${fmt(ult[B])}</b>.`]);
+else msj.push(['💪',`${mesL(ult.m)} va en <b class="neg">${fmt(ult[B])}</b>${enCurso?' y el mes aún no termina':''}. ¡A remontar!`]);
+if(dE!=null)msj.push([dE>=0?'📈':'📉',`Las entradas ${Math.abs(dE)<0.5?'se mantuvieron':dE>=0?'subieron':'bajaron'} <b class="${dE>=0?'pos':'neg'}">${Math.abs(dE).toFixed(0)}%</b> frente a ${mesL(ant.m)}${enCurso?' (el mes actual sigue abierto)':''}.`]);
+if(best[B]>0)msj.push(['🏆',`Mejor mes: <b>${mesL(best.m)}</b> con ${fmt(best[B])} de balance.`]);
+if(bestE!==best&&bestE.e>0)msj.push(['💰',`Récord de entradas: <b>${mesL(bestE.m)}</b> con ${fmt(bestE.e)}.`]);
+if(inv>0)msj.push(['🎯',rec>=100?'¡Con el acumulado operativo ya se recuperó toda la inversión inicial!':`Con el acumulado operativo llevas <b>${rec.toFixed(1)}%</b> de la inversión inicial recuperada.`]);
+const K=(t,txt,c,sub)=>`<div class="card kpi" style="cursor:default"><h4>${t}</h4><b class="${c}">${txt}</b><small class="mu">${sub}</small></div>`;
 const btn=(k,t)=>`<button class="seg${v===k?' on':''}" onclick="S.balv='${k}';pintar()">${t}</button>`;
-return `<div class="card" style="margin-bottom:14px;display:flex;flex-wrap:wrap;gap:10px;align-items:center"><b>Ver el balance con:</b>${btn('op','Solo gastos operativos')}${btn('tot','Gastos totales')}
-<span class="mu">En ninguno se resta la inversión inicial.</span></div>
-<div class="g k">${K('Entradas',tot('e'),'pos','clases + ventas')}${K(v==='op'?'Gastos operativos':'Gastos totales',tot(G),'neg',v==='op'?'operativos + reposición':'operativos + preoperativos + otros')}
-${K('Balance '+(v==='op'?'operativo':'total'),tot(B),tot(B)<0?'neg':'pos','acumulado hasta hoy')}${K('Inversión inicial',tot('inv'),'',"aparte: no se resta")}</div>
-<div class="card" style="margin-bottom:14px"><h3>📊 Entradas vs ${v==='op'?'gastos operativos':'gastos totales'} <small class="mu">(🟢 entradas · 🔴 gastos)</small></h3>
-<div class="mes" style="height:200px">${L.map(x=>`<div onclick="S.balm='${x.m}';pintar()" style="cursor:pointer"><div class="bb" style="height:160px"><i title="Entradas ${fmt(x.e)}" style="height:${x.e/mx*100}%;background:var(--p)"></i><i title="Gastos ${fmt(x[G])}" style="height:${x[G]/mx*100}%;background:var(--bad)"></i></div><b class="${x[B]<0?'neg':'pos'}" style="font-size:.68rem">${fmt(x[B])}</b><br>${nomMes(x.m)}</div>`).join('')}</div></div>
-<div class="card" style="margin-bottom:14px"><h3>📈 Acumulado ${v==='op'?'operativo':'total'}</h3><div style="overflow-x:auto">${svg}</div></div>
-<div class="card"><h3>🧾 Detalle mes a mes</h3><div class="tw"><table class="bal"><thead><tr><th>Mes</th><th class="e">Entradas</th><th>Gastos operativos</th><th>Reposición mercancía</th><th>Gastos preoperativos</th><th>Otros</th><th class="s">Total gastos</th><th class="iv">Inversión inicial</th><th class="b">Balance operativo</th><th class="b">Balance total</th><th>Acum. operativo</th><th>Acum. total</th></tr></thead>
-<tbody>${L.map(x=>`<tr><td><b>${nomMes(x.m)}</b></td><td class="e">${fmt(x.e)}</td><td>${fmt(x.op)}</td><td>${fmt(x.rep)}</td><td>${fmt(x.pre)}</td><td>${fmt(x.otr)}</td><td class="s">${fmt(x.gT)}</td><td class="iv">${fmt(x.inv)}</td><td class="b ${x.bO<0?'neg':'pos'}">${fmt(x.bO)}</td><td class="b ${x.bT<0?'neg':'pos'}">${fmt(x.bT)}</td><td class="${x.aO<0?'neg':'pos'}">${fmt(x.aO)}</td><td class="${x.aT<0?'neg':'pos'}">${fmt(x.aT)}</td></tr>`).join('')}
-<tr class="tt"><td>Total</td><td class="e">${fmt(tot('e'))}</td><td>${fmt(tot('op'))}</td><td>${fmt(tot('rep'))}</td><td>${fmt(tot('pre'))}</td><td>${fmt(tot('otr'))}</td><td class="s">${fmt(tot('gT'))}</td><td class="iv">${fmt(tot('inv'))}</td><td class="${tot('bO')<0?'neg':'pos'}">${fmt(tot('bO'))}</td><td class="${tot('bT')<0?'neg':'pos'}">${fmt(tot('bT'))}</td><td></td><td></td></tr></tbody></table></div>
-<p class="mu"><b>Balance operativo</b> = entradas − gastos operativos − reposición de mercancía (¿el día a día se sostiene?). <b>Balance total</b> = entradas − todos los gastos (operativos, preoperativos y otros). Lo marcado <b>"Inversión Inicial"</b> en Gastos, Activos o Marcancia va en su propia columna y no se resta en ninguno. Toca una barra para ver el detalle del mes.</p></div>
-${S.balm?detalleMes(S.balm):''}`}
+const vb=(k,t)=>`<button class="seg sm${modo===k?' on':''}" onclick="S.balmodo='${k}';pintar()">${t}</button>`;
+const mxE=Math.max(...L.map(x=>Math.max(x.e,x[G])),1);
+let cuerpo;
+if(modo==='t')cuerpo=`<div class="meses">${[...L].reverse().map((x,i,arr)=>{const p=arr[i+1],d=p&&p.e?(x.e-p.e)/p.e*100:null;return `<div class="mc${x[B]<0?' neg-b':''}" onclick="irMes('${x.m}')">
+<div class="mch"><b>${mesL(x.m)}</b>${x===best&&x[B]>0?'<span>🏆</span>':''}${x.m===hoy?'<span class="chip a">en curso</span>':''}</div>
+<div class="mcb"><span>Entradas</span><i style="width:${x.e/mxE*100}%;background:linear-gradient(90deg,#4ade80,#16a34a)"></i><em>${fmt(x.e)}</em></div>
+<div class="mcb"><span>Gastos</span><i style="width:${x[G]/mxE*100}%;background:linear-gradient(90deg,#fca5a5,#dc2626)"></i><em>${fmt(x[G])}</em></div>
+<div class="mcf"><div><small>Balance</small><b class="${x[B]<0?'neg':'pos'}">${fmt(x[B])}</b></div><div><small>Acumulado</small><b class="${x[A]<0?'neg':'pos'}">${fmt(x[A])}</b></div>${d!=null?`<div><small>Entradas vs mes ant.</small><b class="${d<0?'neg':'pos'}">${pctTxt(d)}</b></div>`:''}</div>
+${x.inv?`<small class="mu" style="display:block;margin:8px 0 0">🟣 Inversión inicial (aparte): ${fmt(x.inv)}</small>`:''}</div>`}).join('')}</div>`;
+else if(modo==='l')cuerpo=`<div class="card"><h3>🧾 Detalle mes a mes</h3><div class="tw"><table class="bal"><thead><tr><th>Mes</th><th class="e">Entradas</th><th>Gastos operativos</th><th>Reposición mercancía</th><th>Gastos preoperativos</th><th>Otros</th><th class="s">Total gastos</th><th class="iv">Inversión inicial</th><th class="b">Balance operativo</th><th class="b">Balance total</th><th>Acum. operativo</th><th>Acum. total</th></tr></thead>
+<tbody>${L.map(x=>`<tr style="cursor:pointer" onclick="irMes('${x.m}')"><td><b>${mesC(x.m)}</b></td><td class="e">${fmt(x.e)}</td><td>${fmt(x.op)}</td><td>${fmt(x.rep)}</td><td>${fmt(x.pre)}</td><td>${fmt(x.otr)}</td><td class="s">${fmt(x.gT)}</td><td class="iv">${fmt(x.inv)}</td><td class="b ${x.bO<0?'neg':'pos'}">${fmt(x.bO)}</td><td class="b ${x.bT<0?'neg':'pos'}">${fmt(x.bT)}</td><td class="${x.aO<0?'neg':'pos'}">${fmt(x.aO)}</td><td class="${x.aT<0?'neg':'pos'}">${fmt(x.aT)}</td></tr>`).join('')}
+<tr class="tt"><td>Total</td><td class="e">${fmt(tot('e'))}</td><td>${fmt(tot('op'))}</td><td>${fmt(tot('rep'))}</td><td>${fmt(tot('pre'))}</td><td>${fmt(tot('otr'))}</td><td class="s">${fmt(tot('gT'))}</td><td class="iv">${fmt(tot('inv'))}</td><td class="${tot('bO')<0?'neg':'pos'}">${fmt(tot('bO'))}</td><td class="${tot('bT')<0?'neg':'pos'}">${fmt(tot('bT'))}</td><td></td><td></td></tr></tbody></table></div></div>`;
+else cuerpo=`<div class="card" style="margin-bottom:14px"><h3>📊 Entradas vs ${v==='op'?'gastos operativos':'gastos totales'} <small class="mu">(toca un mes para ver el detalle)</small></h3>${combo(L,G,B,'irMes')}</div>
+<div class="card" style="margin-bottom:14px"><h3>📈 Acumulado ${v==='op'?'operativo':'total'} <small class="mu">(cuánto llevas sumado mes a mes)</small></h3>${acumulado(L,A)}</div>
+<div class="card" style="margin-bottom:14px"><h3>🎯 Metas y logros</h3>${inv>0?`<p class="mu" style="margin:0 0 6px">Recuperación de la inversión inicial (${fmt(inv)}) con el acumulado operativo</p><div class="rec"><i style="width:${rec}%"></i><b>${rec.toFixed(1)}%</b></div>`:''}
+<div class="logros"><div><span>✅</span><b>${pos} de ${n}</b><small>meses en positivo</small></div><div><span>🔥</span><b>${racha}</b><small>${racha===1?'mes seguido':'meses seguidos'} en positivo</small></div><div><span>📊</span><b>${fmt(tot(B)/n)}</b><small>balance promedio por mes</small></div><div><span>💰</span><b>${fmt(bestE.e)}</b><small>récord de entradas (${mesC(bestE.m)})</small></div></div></div>`;
+return `<div class="card" style="margin-bottom:14px"><div class="ctl"><b>Ver el balance con:</b>${btn('op','Solo gastos operativos')}${btn('tot','Gastos totales')}<span class="sp"></span><span class="segs">${vb('g','📊 Gráfico')}${vb('t','▦ Tarjetas')}${vb('l','☰ Tabla')}</span></div>
+<p class="mu" style="margin-bottom:0">En ninguno se resta la inversión inicial.</p></div>
+<div class="motiva">${msj.map(([e,t],i)=>`<div style="animation-delay:${i*70}ms"><span>${e}</span><p>${t}</p></div>`).join('')}</div>
+<div class="g k">${K('Entradas',fmt(tot('e')),'pos','clases + ventas')}${K(v==='op'?'Gastos operativos':'Gastos totales',fmt(tot(G)),'neg',v==='op'?'operativos + reposición':'operativos + preoperativos + otros')}
+${K('Balance '+(v==='op'?'operativo':'total'),fmt(tot(B)),tot(B)<0?'neg':'pos','acumulado hasta hoy')}${K('Meses en positivo',pos+' de '+n,pos*2>=n?'pos':'neg',racha>1?'🔥 racha de '+racha:'')}${K('Inversión inicial',fmt(inv),'','aparte: no se resta')}</div>
+${cuerpo}
+<p class="mu" style="color:#cbd5e1"><b>Balance operativo</b> = entradas − gastos operativos − reposición de mercancía. <b>Balance total</b> = entradas − todos los gastos (operativos, preoperativos y otros). Lo marcado <b>"Inversión Inicial"</b> en Gastos, Activos o Mercancía va aparte y no se resta. Toca un mes para ver su detalle.</p>
+${S.balm?`<div id="detmes"><div style="display:flex;justify-content:flex-end;margin-top:14px"><button class="bt" onclick="S.balm='';pintar()">✕ Cerrar detalle de ${mesL(S.balm)}</button></div>${detalleMes(S.balm)}</div>`:''}`}
 function detalleMes(m){const NM=['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'][+m.slice(5,7)-1]+' '+m.slice(0,4);
 const f=r=>String(r.Fecha||r['Fecha Adquisición']||'').startsWith(m),INV=/inversi[oó]n inicial/i;
 const ga=tabla('gastos').rows.filter(f),ing=tabla('ingresos').rows.filter(f),ve=tabla('ventas').rows.filter(f),me=tabla('merc').rows.filter(f),ac=tabla('activos').rows.filter(f);
@@ -740,7 +856,8 @@ async function borrarFoto(id){if(!confirm('¿Borrar esta foto?'))return;const r=
 function orden(id,c){const s=S[id];s.asc=s.sc===c?-s.asc:1;s.sc=c;pintar()}
 function repintar(id){const p=$('#q').selectionStart;pintar();const q=$('#q');q.focus();q.setSelectionRange(p,p)}
 function pintar(){$('#nav').innerHTML=Object.entries(T).map(([k,t])=>`<button class="${k===tab?'on':''}" onclick="tab='${k}';pintar();scrollTo({top:0,behavior:'smooth'})">${t.n}</button>`).join('');
-$('#main').innerHTML=tab==='resumen'?resumen():vista(tab);$('#nav .on')?.scrollIntoView({inline:'center',block:'nearest'})}
+$('#main').innerHTML=tab==='resumen'?resumen():vista(tab);$('#nav .on')?.scrollIntoView({inline:'center',block:'nearest'});
+document.querySelectorAll('.chartw').forEach(c=>c.scrollLeft=c.scrollWidth)}
 async function api(u){const r=await fetch(u);if(r.status===401){location.href='/login';throw new Error('Sesión vencida')}
 if(!r.ok)throw new Error((await r.json()).detail);return r.json()}
 async function cargar(){try{D=(await api('/api/datos')).hojas;
